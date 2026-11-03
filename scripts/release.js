@@ -1,128 +1,127 @@
-import fs from 'fs-extra';
-import path from 'path';
-import { execSync } from 'child_process';
-import { fileURLToPath } from 'url';
+// Sidecove release flow. A release is a pull request; the tag comes after it merges.
+//   npm run release <patch|minor|major|x.y.z>   branch release/vX.Y.Z with the version bump
+//                                               and the CHANGELOG's Unreleased section renamed
+//   npm run release:tag                         after that PR merges: tag main as vX.Y.Z and push
+//                                               the tag, which starts .github/workflows/release.yml
+//   node scripts/release.js check [vX.Y.Z]      exit 1 unless package.json, manifest.json (and the tag) agree
+//   node scripts/release.js notes <x.y.z>       print the release notes for a version
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { nextVersion, setJsonVersion, promoteUnreleased, releaseNotes, versionProblems } from './release-lib.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const file = name => path.join(root, name);
+const read = name => fs.readFileSync(file(name), 'utf8');
+const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+const repository = 'matthewmoorcroft/sidecove';
 
-async function createRelease() {
-    const args = process.argv.slice(2);
-    const versionType = args[0]; // major, minor, patch, or specific version
-
-    if (!versionType) {
-        console.log('🚀 Sidecove Release Script\n');
-        console.log('Usage: npm run release <version-type>');
-        console.log('');
-        console.log('Version types:');
-        console.log('  patch   - Bug fixes (1.0.0 → 1.0.1)');
-        console.log('  minor   - New features (1.0.0 → 1.1.0)');
-        console.log('  major   - Breaking changes (1.0.0 → 2.0.0)');
-        console.log('  x.y.z   - Specific version (e.g., 2.1.3)');
-        console.log('');
-        console.log('Examples:');
-        console.log('  npm run release patch');
-        console.log('  npm run release minor');
-        console.log('  npm run release 2.3.0');
-        process.exit(0);
-    }
-
-    try {
-        // Check if working directory is clean
-        try {
-            execSync('git diff-index --quiet HEAD --', { stdio: 'pipe' });
-        } catch (error) {
-            console.error('❌ Working directory is not clean. Please commit or stash your changes first.');
-            process.exit(1);
-        }
-
-        // Read current versions
-        const packagePath = path.resolve(__dirname, '../package.json');
-        const manifestPath = path.resolve(__dirname, '../manifest.json');
-
-        const packageJson = await fs.readJson(packagePath);
-        const manifestJson = await fs.readJson(manifestPath);
-
-        const currentVersion = packageJson.version;
-        console.log(`📦 Current version: ${currentVersion}`);
-
-        // Calculate new version
-        let newVersion;
-        if (['patch', 'minor', 'major'].includes(versionType)) {
-            const versionParts = currentVersion.split('.').map(Number);
-            switch (versionType) {
-                case 'patch':
-                    versionParts[2]++;
-                    break;
-                case 'minor':
-                    versionParts[1]++;
-                    versionParts[2] = 0;
-                    break;
-                case 'major':
-                    versionParts[0]++;
-                    versionParts[1] = 0;
-                    versionParts[2] = 0;
-                    break;
-            }
-            newVersion = versionParts.join('.');
-        } else {
-            // Specific version provided
-            if (!/^\d+\.\d+\.\d+$/.test(versionType)) {
-                console.error('❌ Invalid version format. Use x.y.z format (e.g., 2.1.3)');
-                process.exit(1);
-            }
-            newVersion = versionType;
-        }
-
-        console.log(`🎯 New version: ${newVersion}`);
-
-        // Update package.json
-        packageJson.version = newVersion;
-        await fs.writeJson(packagePath, packageJson, { spaces: 2 });
-        console.log('✅ Updated package.json');
-
-        // Update manifest.json
-        manifestJson.version = newVersion;
-        await fs.writeJson(manifestPath, manifestJson, { spaces: 2 });
-        console.log('✅ Updated manifest.json');
-
-        // Build the extension to ensure everything works
-        console.log('🔨 Building extension...');
-        execSync('npm run build', { stdio: 'inherit' });
-
-        // Create zip to test packaging
-        console.log('📦 Creating test package...');
-        execSync('npm run zip', { stdio: 'inherit' });
-
-        // Commit changes
-        console.log('📝 Committing version changes...');
-        execSync(`git add package.json manifest.json`, { stdio: 'inherit' });
-        execSync(`git commit -m "chore: bump version to ${newVersion}"`, { stdio: 'inherit' });
-
-        // Create and push tag
-        console.log('🏷️  Creating and pushing tag...');
-        const tagName = `v${newVersion}`;
-        execSync(`git tag -a ${tagName} -m "Release ${tagName}"`, { stdio: 'inherit' });
-        execSync(`git push origin main`, { stdio: 'inherit' });
-        execSync(`git push origin ${tagName}`, { stdio: 'inherit' });
-
-        console.log('');
-        console.log('🎉 Release process completed!');
-        console.log('');
-        console.log(`✅ Version bumped to ${newVersion}`);
-        console.log(`✅ Tag ${tagName} created and pushed`);
-        console.log(`✅ GitHub Actions will now build and create the release`);
-        console.log('');
-        console.log(`🔗 Check the release at: https://github.com/matthewmoorcroft/sidecove/releases/tag/${tagName}`);
-        console.log('');
-        console.log('📋 Next steps:');
-        console.log('1. Monitor the GitHub Actions workflow');
-        console.log('2. Review the generated release notes');
-        console.log('3. Update the Chrome Web Store listing (if applicable)');
-    } catch (error) {
-        console.error('❌ Release failed:', error.message);
-        process.exit(1);
-    }
+function fail(message) {
+    console.error(`❌ ${message}`);
+    process.exit(1);
 }
 
-createRelease();
+function versions() {
+    return {
+        packageVersion: JSON.parse(read('package.json')).version,
+        manifestVersion: JSON.parse(read('manifest.json')).version
+    };
+}
+
+function requireCleanMain() {
+    if (git('status', '--porcelain')) fail('The working tree has uncommitted changes.');
+    if (git('rev-parse', '--abbrev-ref', 'HEAD') !== 'main') fail('Run this on main.');
+    git('fetch', '--quiet', 'origin', 'main', '--tags');
+    if (git('rev-parse', 'HEAD') !== git('rev-parse', 'origin/main'))
+        fail('main is not the same as origin/main; pull first.');
+}
+
+function prepare(type) {
+    if (!type) fail('Usage: npm run release <patch|minor|major|x.y.z>');
+    requireCleanMain();
+    const { packageVersion } = versions();
+    const version = nextVersion(packageVersion, type);
+    const branch = `release/v${version}`;
+    const changelog = promoteUnreleased(read('CHANGELOG.md'), version);
+
+    git('switch', '--create', branch);
+    for (const name of ['package.json', 'manifest.json'])
+        fs.writeFileSync(file(name), setJsonVersion(read(name), version));
+    const lock = JSON.parse(read('package-lock.json'));
+    lock.version = version;
+    lock.packages[''].version = version;
+    fs.writeFileSync(file('package-lock.json'), `${JSON.stringify(lock, null, 2)}\n`);
+    fs.writeFileSync(file('CHANGELOG.md'), changelog);
+    git('add', 'package.json', 'package-lock.json', 'manifest.json', 'CHANGELOG.md');
+    git('commit', '--quiet', '--message', `Release ${version}`);
+
+    console.log(`✅ ${branch}: version ${packageVersion} -> ${version}, CHANGELOG section "## ${version}".`);
+    console.log('Next:');
+    console.log(`  1. git push --set-upstream origin ${branch}`);
+    console.log(`  2. Open a pull request into main: https://github.com/${repository}/compare/main...${branch}`);
+    console.log('  3. When CI passes and it merges, run "npm run release:tag" on an up-to-date main.');
+}
+
+function tag() {
+    requireCleanMain();
+    const { manifestVersion } = versions();
+    const name = `v${manifestVersion}`;
+    const problems = versionProblems({ tag: name, ...versions() });
+    if (problems.length) fail(problems.join('\n'));
+    releaseNotes(read('CHANGELOG.md'), manifestVersion);
+    if (git('tag', '--list', name)) fail(`Tag ${name} already exists. Did the release PR bump the version?`);
+    git('tag', '--annotate', name, '--message', `Sidecove ${manifestVersion}`);
+    git('push', 'origin', name);
+    console.log(
+        `✅ Pushed ${name}. Follow the Release workflow: https://github.com/${repository}/actions/workflows/release.yml`
+    );
+}
+
+function check(tagName) {
+    const problems = versionProblems({ tag: tagName, ...versions() });
+    if (problems.length) fail(problems.join('\n'));
+    console.log(
+        `✅ package.json and manifest.json are ${versions().manifestVersion}${tagName ? `, matching ${tagName}` : ''}.`
+    );
+}
+
+function notes(version) {
+    if (!version) fail('Usage: node scripts/release.js notes <x.y.z>');
+    const previous = git('tag', '--list', 'v*', '--sort=-v:refname', '--merged', 'HEAD')
+        .split('\n')
+        .find(name => name && name !== `v${version}`);
+    const lines = [
+        releaseNotes(read('CHANGELOG.md'), version),
+        '',
+        '## Install',
+        '',
+        '1. Download `sidecove-extension.zip` below and unzip it.',
+        '2. Open `chrome://extensions/`, turn on **Developer mode**, click **Load unpacked** and choose the unzipped folder.',
+        '',
+        'Sidecove needs Chrome 116 or later.',
+        '',
+        '## Verify the download',
+        '',
+        '```bash',
+        'sha256sum -c sidecove-extension.zip.sha256',
+        `gh attestation verify sidecove-extension.zip --repo ${repository}`,
+        '```',
+        '',
+        'The first checks the zip against its published checksum; the second checks that GitHub Actions built it from this repository.'
+    ];
+    if (previous)
+        lines.push('', `**Full changelog:** https://github.com/${repository}/compare/${previous}...v${version}`);
+    process.stdout.write(`${lines.join('\n')}\n`);
+}
+
+const [command, argument] = process.argv.slice(2);
+try {
+    if (command === 'prepare') prepare(argument);
+    else if (command === 'tag') tag();
+    else if (command === 'check') check(argument);
+    else if (command === 'notes') notes(argument);
+    else fail('Usage: node scripts/release.js <prepare <type>|tag|check [vX.Y.Z]|notes <x.y.z>>');
+} catch (error) {
+    fail(error.message);
+}

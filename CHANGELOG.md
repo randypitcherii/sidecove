@@ -8,6 +8,7 @@
 - **Smaller download:** the extension package is about 1 MB instead of 2.4 MB. Every image and the font used to ship twice, and an old, unused welcome page and its pictures shipped too; both are gone. Nothing you see changes.
 - **Repository cleanup, part 4 (test seams):** auto-archive and the first-run guide's install and update rules moved out of the background script into their own modules, which their tests now load directly. Behaviour is unchanged.
 - **Repository cleanup, part 5 (lint and format):** ESLint checks the code, including which parts of the extension may import which, and Prettier formats it; CI runs both. Two files were renamed to the kebab-case used everywhere else. Users will not notice any change.
+- **Repository cleanup, part 6 (releases):** a release is now a pull request, and the tag comes after it merges. The release build runs the tests, checks the version, takes its notes from this changelog, and publishes a checksum you can verify with `sha256sum -c` and a build provenance record. Users will not notice any change in the extension.
 
 ## 1.2.0
 

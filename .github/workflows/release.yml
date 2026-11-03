@@ -1,184 +1,105 @@
 name: Release
 
+# A v* tag on main publishes a release. Every pull request runs the same build, checks and
+# notes as a dry run, without publishing anything. See CONTRIBUTING.md for the release flow.
 on:
   push:
     tags:
-      - 'v*'  # Triggers on version tags like v1.0.0, v2.1.3, etc.
+      - 'v*'
+  pull_request:
 
 permissions:
-  contents: write
-  pull-requests: read
+  contents: read
 
 jobs:
-  release:
+  build:
+    name: Release dry run
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          fetch-depth: 0  # Fetch full history for changelog generation
-      
+          fetch-depth: 0 # tags and main, for the checks and the changelog link
+
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
+      - name: Check the version
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            node scripts/release.js check "$GITHUB_REF_NAME"
+            git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "❌ $GITHUB_REF_NAME is not on main"; exit 1; }
+          else
+            node scripts/release.js check
+          fi
+
+      - name: Unit tests
+        run: npm run test:unit
+
       - name: Build extension
         run: npm run build
-      
+
+      - name: Check every file reference in dist/ resolves
+        run: npm run verify:dist
+
       - name: Create zip package
         run: npm run zip
-      
-      - name: Generate SHA256 checksum
-        id: checksum
+
+      - name: Write the checksum
         run: |
-          CHECKSUM=$(sha256sum sidecove-extension.zip | cut -d ' ' -f 1)
-          echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
-          echo "SHA256: $CHECKSUM" > checksum.txt
-      
-      - name: Get version from tag
-        id: version
+          sha256sum sidecove-extension.zip > sidecove-extension.zip.sha256
+          sha256sum -c sidecove-extension.zip.sha256
+
+      - name: Write the release notes from CHANGELOG.md
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-      
-      - name: Generate release notes
-        id: release_notes
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+          VERSION=$(node -p "require('./manifest.json').version")
+          node scripts/release.js notes "$VERSION" > release-notes.md
+          cat release-notes.md
+
+      - name: Keep the release files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          script: |
-            const { execSync } = require('child_process');
-            const fs = require('fs');
-            
-            // Get the current tag and previous tag
-            const currentTag = context.ref.replace('refs/tags/', '');
-            const version = currentTag.replace(/^v/, ''); // Remove 'v' prefix if present
-            
-            let previousTag;
-            try {
-              previousTag = execSync('git describe --tags --abbrev=0 HEAD^', { encoding: 'utf8' }).trim();
-            } catch (error) {
-              // If no previous tag exists, use the first commit
-              previousTag = execSync('git rev-list --max-parents=0 HEAD', { encoding: 'utf8' }).trim();
-            }
-            
-            // Get commits between tags
-            const commits = execSync(`git log ${previousTag}..${currentTag} --pretty=format:"%h %s" --no-merges`, { encoding: 'utf8' }).trim();
-            
-            // Read package.json for extension info
-            const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            const manifestJson = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
-            
-            // Read checksum from file
-            let checksum = '';
-            try {
-              const checksumContent = fs.readFileSync('checksum.txt', 'utf8');
-              checksum = checksumContent.replace('SHA256: ', '').trim();
-            } catch (error) {
-              console.log('Warning: Could not read checksum.txt');
-            }
-            
-            // Generate release notes
-            let releaseNotes = `# ${manifestJson.name} v${version}\n\n`;
-            releaseNotes += `${manifestJson.description}\n\n`;
-            
-            if (commits) {
-              releaseNotes += `## 🚀 What's Changed\n\n`;
-              const commitLines = commits.split('\n');
-              
-              // Categorize commits
-              const features = [];
-              const fixes = [];
-              const other = [];
-              
-              commitLines.forEach(line => {
-                if (line.toLowerCase().includes('feat') || line.toLowerCase().includes('add')) {
-                  features.push(line);
-                } else if (line.toLowerCase().includes('fix') || line.toLowerCase().includes('bug')) {
-                  fixes.push(line);
-                } else {
-                  other.push(line);
-                }
-              });
-              
-              if (features.length > 0) {
-                releaseNotes += `### ✨ New Features\n`;
-                features.forEach(commit => {
-                  const [hash, ...messageParts] = commit.split(' ');
-                  releaseNotes += `- ${messageParts.join(' ')} (${hash})\n`;
-                });
-                releaseNotes += '\n';
-              }
-              
-              if (fixes.length > 0) {
-                releaseNotes += `### 🐛 Bug Fixes\n`;
-                fixes.forEach(commit => {
-                  const [hash, ...messageParts] = commit.split(' ');
-                  releaseNotes += `- ${messageParts.join(' ')} (${hash})\n`;
-                });
-                releaseNotes += '\n';
-              }
-              
-              if (other.length > 0) {
-                releaseNotes += `### 🔧 Other Changes\n`;
-                other.forEach(commit => {
-                  const [hash, ...messageParts] = commit.split(' ');
-                  releaseNotes += `- ${messageParts.join(' ')} (${hash})\n`;
-                });
-                releaseNotes += '\n';
-              }
-            }
-            
-            // Add installation instructions
-            releaseNotes += `## 📦 Installation\n\n`;
-            releaseNotes += `### Chrome Web Store\n`;
-            releaseNotes += `*Coming soon - extension will be available on the Chrome Web Store*\n\n`;
-            releaseNotes += `### Manual Installation\n`;
-            releaseNotes += `1. Download \`sidecove-extension.zip\` from the assets below\n`;
-            releaseNotes += `2. Extract the zip file\n`;
-            releaseNotes += `3. Open Chrome and go to \`chrome://extensions/\`\n`;
-            releaseNotes += `4. Enable "Developer mode" in the top right\n`;
-            releaseNotes += `5. Click "Load unpacked" and select the extracted folder\n\n`;
-            
-            // Add file info
-            releaseNotes += `## 📋 File Information\n\n`;
-            releaseNotes += `| File | SHA256 Checksum |\n`;
-            releaseNotes += `|------|----------------|\n`;
-            releaseNotes += `| sidecove-extension.zip | \`${checksum}\` |\n\n`;
-            
-            // Add compatibility info
-            releaseNotes += `## 🔧 Compatibility\n\n`;
-            releaseNotes += `- **Chrome**: Version 88+ (Manifest V3 support required)\n`;
-            releaseNotes += `- **Edge**: Version 88+ (Chromium-based)\n`;
-            releaseNotes += `- **Brave**: Version 1.20+\n`;
-            releaseNotes += `- **Opera**: Version 74+\n\n`;
-            
-            releaseNotes += `## 🛠️ Development\n\n`;
-            releaseNotes += `Built with:\n`;
-            releaseNotes += `- Vite.js for modern build tooling\n`;
-            releaseNotes += `- Chrome Extension Manifest V3\n`;
-            releaseNotes += `- ES6 Modules\n\n`;
-            
-            releaseNotes += `---\n\n`;
-            releaseNotes += `**Full Changelog**: https://github.com/${{ github.repository }}/compare/${previousTag}...${currentTag}`;
-            
-            return releaseNotes;
-      
-      - name: Create Release
-        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1 (v0.1.15)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Sidecove v${{ steps.version.outputs.version }}
-          body: ${{ steps.release_notes.outputs.result }}
-          draft: false
-          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'rc') }}
-          files: |
+          name: release
+          path: |
             sidecove-extension.zip
-            checksum.txt 
+            sidecove-extension.zip.sha256
+            release-notes.md
+          retention-days: 7
+
+  publish:
+    name: Publish release
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release
+      id-token: write # sign the provenance attestation
+      attestations: write
+
+    steps:
+      - name: Get the release files
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: sidecove-extension.zip
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" sidecove-extension.zip sidecove-extension.zip.sha256 \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Sidecove ${GITHUB_REF_NAME#v}" \
+            --notes-file release-notes.md \
+            --verify-tag

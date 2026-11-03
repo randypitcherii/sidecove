@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   test:
+    name: E2E
     runs-on: ubuntu-latest
     timeout-minutes: 30
 

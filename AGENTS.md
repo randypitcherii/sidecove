@@ -77,7 +77,8 @@ Vite, no framework, no runtime dependencies.
 
 - Every pull request adds a line to `CHANGELOG.md` under `Unreleased`, in plain words; say so
   when users will not notice the change.
-- Version numbers change only in a release, in `package.json` and `manifest.json` together
-  (`npm run release`, see `CONTRIBUTING.md`).
+- Version numbers change only in a release PR (`npm run release <type>`), in `package.json`
+  and `manifest.json` together. After it merges, `npm run release:tag` pushes the tag `vX.Y.Z`;
+  `release.yml` builds the zip, checksum, provenance and notes (see `CONTRIBUTING.md`).
 - Third-party code or assets: add the licence to `THIRD_PARTY_NOTICES.md` in the same change.
 - Keep `README.md` (users), `CONTRIBUTING.md` (developers) and this file in step with the code.

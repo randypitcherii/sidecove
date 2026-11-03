@@ -52,12 +52,11 @@ Never add a permission, host permission or content script without saying so in t
 
 ## Releases
 
-Releases are built by GitHub Actions from a version tag. Run the release script on an up-to-date `main`: it commits the version bump there and pushes `main` and the tag.
+A release is a pull request; the tag comes after it merges, and GitHub Actions builds and publishes from the tag.
 
-```bash
-npm run release patch   # 1.2.0 -> 1.2.1
-npm run release minor   # 1.2.0 -> 1.3.0
-npm run release 2.0.0   # a specific version
-```
+1. On an up-to-date `main`, run `npm run release minor` (or `patch`, `major`, or a version such as `2.0.0`). It creates the branch `release/vX.Y.Z`, sets the version in `package.json`, `package-lock.json` and `manifest.json`, and renames the CHANGELOG's `Unreleased` section to `X.Y.Z`. Nothing is pushed.
+2. Push the branch and open a pull request into `main`. Read the CHANGELOG section as release notes: users will see it.
+3. When CI passes and the pull request merges, run `npm run release:tag` on the updated `main`. It checks that the versions agree, then tags `vX.Y.Z` and pushes the tag.
+4. The `Release` workflow checks that the tag matches `manifest.json` and `package.json` and is on `main`, runs the unit tests, builds and zips the extension, writes `sidecove-extension.zip.sha256` (check it with `sha256sum -c`), records build provenance (check it with `gh attestation verify sidecove-extension.zip --repo matthewmoorcroft/sidecove`), and publishes a GitHub release whose notes are that CHANGELOG section. Follow it on the [Actions tab](https://github.com/matthewmoorcroft/sidecove/actions).
 
-The script updates the version in `package.json` and `manifest.json`, builds and zips the extension, commits, tags `vX.Y.Z` and pushes. The `Release` workflow then builds the zip and its SHA-256 checksum and publishes a GitHub release. Follow it on the [Actions tab](https://github.com/matthewmoorcroft/sidecove/actions).
+Every pull request also runs the workflow's build as a **Release dry run**, so a broken release shows up before anything is tagged. Release tags cannot be moved or deleted once pushed.
