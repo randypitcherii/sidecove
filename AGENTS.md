@@ -10,6 +10,7 @@ Vite, no framework, no runtime dependencies.
 - `npm ci`: install (CI uses Node from `.nvmrc`).
 - `npm run build`: production build to `dist/`. `npm run dev`: watch build to `dist-dev/`.
 - `npm run test:unit`: fast unit tests (`node:test`), no browser. Run before every commit.
+- `npm run lint`: ESLint, including the folder-boundary rules below. `npm run format`: Prettier.
 - `npm run test:e2e`: builds, then drives real Chrome with Puppeteer. Slow; CI runs it on every PR.
 - `npm run verify:dist`: fails if anything in `dist/` points at a file the build does not contain.
 - `npm run zip`: packages `dist/` as `sidecove-extension.zip`.
@@ -32,7 +33,7 @@ Vite, no framework, no runtime dependencies.
 - Static files that must keep their path go in `public/assets/` and are referenced by absolute
   path (`/assets/icon.png`), so the build does not emit a second hashed copy.
 - Imports flow inwards only: a context may import `shared/`; `shared/` never imports a context;
-  contexts never import each other.
+  contexts never import each other. ESLint enforces this.
 - Prefer a new small file over growing a large one. If a file passes about 400 lines, split it
   by feature in the same change.
 
@@ -67,7 +68,8 @@ Vite, no framework, no runtime dependencies.
 
 ## Style
 
-- ES modules, `const`/`let`, async/await. New file names are kebab-case.
+- ES modules, `const`/`let`, async/await. File names are kebab-case. Run `npm run format`
+  instead of formatting by hand; CI checks it.
 - Use `Logger` from `shared/logger.js`, not `console`, so debug logging stays behind the setting.
 - Comments explain why, not what. Keep them short.
 

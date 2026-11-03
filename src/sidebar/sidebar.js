@@ -19,7 +19,7 @@ import { initSidebarTour } from './tour/sidebar-tour.js';
  * - Manages archived tabs and auto-archive settings
  */
 
-import { ChromeHelper } from './chromeHelper.js';
+import { ChromeHelper } from './chrome-helper.js';
 import { spaceRequest } from '../shared/space-client.js';
 import { SpacePatchQueue } from './space-patch-queue.js';
 import { RefreshCoordinator } from './refresh-coordinator.js';
@@ -73,7 +73,7 @@ import {
     handleEmptyContainerDrop,
     showUndoToast,
     showMenu
-} from './domManager.js';
+} from './dom-manager.js';
 import { BookmarkUtils } from '../shared/bookmark-utils.js';
 import { Logger } from '../shared/logger.js';
 import { MOUSE_BUTTON, CSS_CLASSES, TIMING } from '../shared/constants.js';
@@ -725,7 +725,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // this guard a horizontal swipe meant to scroll the chips would also
             // switch the active space — that exact conflict is why chip
             // scrolling felt slow and randomly reversed direction. The chip
-            // strip's own wheel handler (domManager.setupDOMElements) already
+            // strip's own wheel handler (setupDOMElements in dom-manager.js) already
             // stopPropagation()s its events so we shouldn't reach this branch
             // for those gestures, but we filter here too in case any future
             // code path bypasses that.
@@ -1679,7 +1679,7 @@ function revealActiveSpaceChip() {
     spaceSwitcher.scrollLeft = left;
 }
 
-// Wrapper functions that use the unified getDragAfterElement from domManager.js
+// Wrapper functions that use the unified getDragAfterElement from dom-manager.js
 function getDragAfterElementSwitcher(container, x) {
     return getDragAfterElement(container, x, {
         axis: 'x',

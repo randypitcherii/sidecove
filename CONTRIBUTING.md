@@ -28,6 +28,12 @@ Extension code is in `src/`, split by the extension context it runs in: `backgro
 
 To try a build, open `chrome://extensions/`, turn on **Developer mode**, click **Load unpacked** and choose `dist/` or `dist-dev/`. After rebuilding, click the reload icon on the Sidecove card. The service worker's console is linked from the same card; the side panel and the settings page have their own DevTools.
 
+## Lint and format
+
+- `npm run lint`: ESLint. It also enforces the folder boundaries in AGENTS.md: a context imports only its own folder and `src/shared/`. CI fails on errors; warnings mark older code to tidy when you next touch it.
+- `npm run format`: Prettier for JavaScript and CSS (`npm run format:check` is what CI runs). Page markup, JSON, Markdown and YAML are formatted by hand.
+- One commit reformatted the whole codebase. To keep `git blame` useful, run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once.
+
 ## Tests
 
 - `npm run test:unit`: unit tests with Node's built-in runner, no browser. They take a few seconds; run them before every commit.
