@@ -9,6 +9,9 @@
     "build:zip": "npm run build && npm run zip",
     "zip": "node scripts/zip.js",
     "verify:dist": "node scripts/verify-dist.js",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "clean": "rm -rf dist dist-dev *.zip",
     "info": "node scripts/build-info.js",
     "release": "node scripts/release.js",
@@ -26,9 +29,13 @@
     "node": ">=24"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "archiver": "^6.0.1",
+    "eslint": "^10.13.0",
     "fs-extra": "^11.2.0",
+    "globals": "^17.13.0",
     "jest": "^30.2.0",
+    "prettier": "^3.9.10",
     "puppeteer": "^24.37.1",
     "vite": "^6.0.0"
   },

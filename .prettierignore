@@ -1,0 +1,11 @@
+# Formatted by hand: page markup whitespace can change rendering, and JSON, Markdown and
+# YAML are kept as written (manifest.json must stay byte-identical between releases).
+dist/
+dist-dev/
+node_modules/
+public/
+*.html
+*.md
+*.json
+*.yml
+*.yaml
