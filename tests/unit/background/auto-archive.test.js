@@ -1,17 +1,10 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { runInNewContext } from 'node:vm';
-import { SpaceStore, ownerOf } from '../../../src/shared/space-store.js';
-import { isProtectedFavorite } from '../../../src/shared/favorite-safety.js';
-import { Utils } from '../../../src/shared/utils.js';
-import { Logger } from '../../../src/shared/logger.js';
-import { ROOT_FOLDER_TITLE } from '../../../src/shared/constants.js';
+import { SpaceStore } from '../../../src/shared/space-store.js';
+import { registerAutoArchive } from '../../../src/background/auto-archive.js';
 
 const threshold = 360 * 60 * 1000;
 
-const source = readFileSync(new URL('../../../src/background/background.js', import.meta.url), 'utf8')
-    .replace(/^import .*;\s*$/gm, '');
 let local, session, tabs, removed;
 const area = data => ({
     async get(keys) {
@@ -41,12 +34,10 @@ function startBackground() {
         windows: { onFocusChanged: event(), get: async id => ({ id, focused: true }) },
         bookmarks: { search: async () => [{ id: 'root' }], getChildren: async () => [], getSubTree: async () => [{ id: 'root', children: [] }] }
     };
-    runInNewContext(source, {
-        chrome, console, setTimeout, clearTimeout,
-        registerTourMessages() {}, registerBookmarkListeners() {},
-        enqueueBookmarkOperation: async () => ({}), copyCurrentTabUrlWithFallback: async () => {},
-        SpaceStore, ownerOf, isProtectedFavorite, Utils, Logger, ROOT_FOLDER_TITLE
-    });
+    // As the service worker does: one space store, then auto-archive on top of it.
+    const spaceStore = new SpaceStore();
+    spaceStore.install();
+    registerAutoArchive(spaceStore);
     return () => Promise.all(chrome.alarms.onAlarm.listeners.map(fn => fn({ name: 'autoArchiveTabsAlarm' })));
 }
 

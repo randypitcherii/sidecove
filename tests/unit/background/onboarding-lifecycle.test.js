@@ -1,35 +1,45 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { runInNewContext } from 'node:vm';
+import { openOnboardingIfDue } from '../../../src/background/onboarding-lifecycle.js';
 
-const source = readFileSync(new URL('../../../src/background/background.js', import.meta.url), 'utf8')
-    .replace(/^import .*;\s*$/gm, '');
 function background(completed = false, onboardingVersion = undefined, version = '5.1.0') {
-    const installed = [], messages = [], opened = [];
+    const opened = [];
+    globalThis.chrome = {
+        runtime: { getManifest: () => ({ version }) },
+        storage: { sync: { get: async () => ({ onboardingCompleted: completed, onboardingVersion }) } },
+        tabs: { create: async tab => opened.push(tab) }
+    };
+    return { installed: [openOnboardingIfDue], opened };
+}
+
+// The whole service worker, loaded once with a stub chrome, for its message listeners.
+async function serviceWorker() {
+    const messages = [];
     const event = { addListener() {} };
-    const chrome = {
-        runtime: {
-            onInstalled: { addListener: listener => installed.push(listener) },
-            onMessage: { addListener: listener => messages.push(listener) },
-            onStartup: event,
-            getManifest: () => ({ version })
+    const area = data => ({
+        async get(keys) {
+            const names = typeof keys === 'string' ? [keys] : Array.isArray(keys) ? keys : Object.keys(keys || data);
+            return Object.fromEntries(names.map(k => [k, structuredClone(data[k] ?? keys?.[k])]));
         },
+        async set(values) { Object.assign(data, structuredClone(values)); }
+    });
+    const home = { id: 'home', spaceUuid: 'home', name: 'Home', color: 'grey', bookmarkFolderId: 'home', spaceBookmarks: [], temporaryTabs: [] };
+    globalThis.chrome = {
+        runtime: { onInstalled: event, onStartup: event, onMessage: { addListener: listener => messages.push(listener) },
+            getManifest: () => ({ version: '5.1.0' }), getURL: path => `chrome-extension://sidecove/${path}` },
         sidePanel: { setPanelBehavior: async () => {} },
         commands: { onCommand: event },
-        alarms: { onAlarm: event, clear: async () => {} },
-        storage: { onChanged: event, sync: { get: async () => ({ onboardingCompleted: completed, onboardingVersion }) } },
-        tabs: { create: async tab => opened.push(tab), onActivated: event, onUpdated: event, onRemoved: event }
+        alarms: { onAlarm: event, clear: async () => {}, create: async () => {} },
+        storage: { onChanged: event, local: area({ spaceModelVersion: 2, spaces: [home] }), session: area({ spaceSession: true }), sync: area({}) },
+        tabs: { onCreated: event, onUpdated: event, onRemoved: event, onReplaced: event, onActivated: event, onMoved: event, onAttached: event, onDetached: event,
+            query: async () => [], get: async () => undefined, create: async () => ({}) },
+        tabGroups: { onRemoved: event, onUpdated: event, query: async () => [] },
+        windows: { onFocusChanged: event, onRemoved: event, get: async id => ({ id, focused: true }) },
+        bookmarks: { onCreated: event, onRemoved: event, onChanged: event, onMoved: event, onChildrenReordered: event, onImportEnded: event,
+            search: async () => [{ id: 'root' }], get: async () => [], getChildren: async () => [], getSubTree: async () => [{ id: 'root', children: [] }] }
     };
-    runInNewContext(source, {
-        chrome, console, registerTourMessages() {},
-        registerBookmarkListeners() {},
-        enqueueBookmarkOrder: async () => [],
-        SpaceStore: class { install() {} async dispatch() { return [{ id: 'home' }]; } },
-        Utils: { getSettings: async () => ({ autoArchiveEnabled: false }) },
-        Logger: { log() {}, error() {} }
-    });
-    return { installed, messages, opened };
+    await import('../../../src/background/background.js');
+    return { messages };
 }
 
 test('a fresh install opens the onboarding guide once', async () => {
@@ -59,7 +69,7 @@ test('a completed install sees the onboarding once when this extension version c
 });
 
 test('space-store replies are not intercepted by unrelated Promise listeners', async () => {
-    const app = background();
+    const app = await serviceWorker();
     const replies = [];
     const claims = app.messages.map(listener => listener({ type: 'spaceStore', action: 'get' }, {}, reply => replies.push(reply)));
     assert.equal(claims.filter(claim => claim === true).length, 1);
