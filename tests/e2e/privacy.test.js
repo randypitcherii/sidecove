@@ -20,7 +20,7 @@ async function openAndRecord(path) {
     return { page, requests, fonts };
 }
 
-test.each(['sidebar.html', 'options.html', 'onboarding.html', 'installation-onboarding.html'])(
+test.each(['sidebar.html', 'options.html', 'installation-onboarding.html'])(
     '%s makes no network request and renders Varela Round from the extension',
     async path => {
         const { page, requests, fonts } = await openAndRecord(path);

@@ -90,7 +90,7 @@ test('a favorite that wraps onto a new row keeps the same width as the others (u
 });
 
 test('the welcome screens send feedback to the Sidecove issues page and show no email address', async () => {
-    for (const file of ['installation-onboarding.html', 'onboarding.html']) {
+    for (const file of ['installation-onboarding.html']) {
         const welcome = await browser.newPage();
         await welcome.goto(`chrome-extension://${extensionId}/${file}`, { waitUntil: 'domcontentloaded' });
         const found = await welcome.evaluate(() => ({

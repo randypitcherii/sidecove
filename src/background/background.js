@@ -76,25 +76,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     if (firstInstall || newVersion) {
         chrome.tabs.create({ url: 'installation-onboarding.html', active: true });
     }
-
-    if (chrome.contextMenus) {
-        // Clear menus from an earlier version first; 1.1.0 and before used a different id.
-        chrome.contextMenus.removeAll(() => chrome.contextMenus.create({
-            id: "openSidecove",
-            title: "Sidecove",
-            contexts: ["all"]
-        }));
-    }
 });
-
-// Handle context menu clicks
-if (chrome.contextMenus) {
-    chrome.contextMenus.onClicked.addListener((info, tab) => {
-        info.menuItemId === "openSidecove" && chrome.sidePanel.open({
-            windowId: tab.windowId
-        })
-    });
-}
 
 // Listen for messages from the content script (sidebar)
 // Do not return a Promise for unrelated messages: it can win the response race

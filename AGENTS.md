@@ -11,6 +11,7 @@ Vite, no framework, no runtime dependencies.
 - `npm run build`: production build to `dist/`. `npm run dev`: watch build to `dist-dev/`.
 - `npm run test:unit`: fast unit tests (`node:test`), no browser. Run before every commit.
 - `npm run test:e2e`: builds, then drives real Chrome with Puppeteer. Slow; CI runs it on every PR.
+- `npm run verify:dist`: fails if anything in `dist/` points at a file the build does not contain.
 - `npm run zip`: packages `dist/` as `sidecove-extension.zip`.
 
 ## Where code goes
@@ -28,7 +29,8 @@ Vite, no framework, no runtime dependencies.
   `chrome` in as an argument where a module needs it, as `background/url-copy.js` does.
 - HTML pages live at the top of `src/` and build to the top of `dist/`. Their file names are
   public URLs: do not rename them.
-- Images and the font live in `assets/` at the repository root and are copied to `dist/assets/`.
+- Static files that must keep their path go in `public/assets/` and are referenced by absolute
+  path (`/assets/icon.png`), so the build does not emit a second hashed copy.
 - Imports flow inwards only: a context may import `shared/`; `shared/` never imports a context;
   contexts never import each other.
 - Prefer a new small file over growing a large one. If a file passes about 400 lines, split it

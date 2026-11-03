@@ -1,4 +1,4 @@
-@font-face { font-family: 'Sidecove Round'; src: url('../../../assets/varela-round.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Sidecove Round'; src: url('/assets/varela-round.ttf') format('truetype'); font-display: swap; }
 #sidecove-tour[hidden], #sidecove-tour-ring[hidden], #coach-retry[hidden] { display: none !important; }
 /* Inherit the active space token, including custom palette changes. */
 #sidebar-container {

@@ -4,10 +4,11 @@
   "description": "Vertical tabs in Chrome's side panel: switch between spaces, keep pinned tabs and favourites, auto-archive idle tabs. Free and open.",
   "type": "module",
   "scripts": {
-    "dev": "vite build --config vite.config.dev.js --watch",
+    "dev": "vite build --mode development",
     "build": "vite build",
     "build:zip": "npm run build && npm run zip",
     "zip": "node scripts/zip.js",
+    "verify:dist": "node scripts/verify-dist.js",
     "clean": "rm -rf dist dist-dev *.zip",
     "info": "node scripts/build-info.js",
     "release": "node scripts/release.js",

@@ -28,6 +28,9 @@ jobs:
       - name: Build extension (production)
         run: npm run build
 
+      - name: Check every file reference in dist/ resolves
+        run: npm run verify:dist
+
       - name: Unit regression tests
         run: npm run test:unit
 

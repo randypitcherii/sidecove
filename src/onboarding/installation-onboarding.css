@@ -1,6 +1,6 @@
 @font-face {
     font-family: 'Sidecove Round';
-    src: url('../../assets/varela-round.ttf') format('truetype');
+    src: url('/assets/varela-round.ttf') format('truetype');
     font-display: swap;
 }
 :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #30282c; background: #f3f6fc; font-synthesis: none; }

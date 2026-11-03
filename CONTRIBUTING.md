@@ -14,12 +14,13 @@ npm ci
 
 ## Where things live
 
-Extension code is in `src/`, split by the extension context it runs in: `background/` (the service worker), `sidebar/`, `options/`, `onboarding/` and `offscreen/`, with `shared/` for modules two or more of them import. The HTML pages sit at the top of `src/`. Images and the font are in `assets/`. Unit tests in `tests/unit/` mirror the `src/` folders. [AGENTS.md](AGENTS.md) has the full rules for where new code goes and what must not change; `CLAUDE.md` links to it.
+Extension code is in `src/`, split by the extension context it runs in: `background/` (the service worker), `sidebar/`, `options/`, `onboarding/` and `offscreen/`, with `shared/` for modules two or more of them import. The HTML pages sit at the top of `src/`. Images and the font are in `public/assets/`, copied unchanged to `dist/assets/`; refer to them by absolute path, such as `/assets/icon.png`. Unit tests in `tests/unit/` mirror the `src/` folders. [AGENTS.md](AGENTS.md) has the full rules for where new code goes and what must not change; `CLAUDE.md` links to it.
 
 ## Build and load
 
 - `npm run build`: production build to `dist/`.
 - `npm run dev`: development build to `dist-dev/`, with source maps, rebuilt on every change.
+- `npm run verify:dist`: check that every page, stylesheet, script and manifest reference in `dist/` points at a file in the build.
 - `npm run build:zip`: production build, then `sidecove-extension.zip` from `dist/`.
 - `npm run zip`: package an existing `dist/`.
 - `npm run clean`: remove `dist/`, `dist-dev/` and zip files.
