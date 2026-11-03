@@ -7,16 +7,21 @@ let server;
 let browser, page, fixture;
 const row = id => `.space.active .tab[data-tab-id="${id}"]`;
 async function toggle(id) {
-    await page.waitForFunction(id => {
-        const el = document.querySelector(`.space.active .tab[data-tab-id="${id}"]`);
-        if (!el) return false;
-        el.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
-        return true;
-    }, { polling: 100 }, id);
+    await page.waitForFunction(
+        id => {
+            const el = document.querySelector(`.space.active .tab[data-tab-id="${id}"]`);
+            if (!el) return false;
+            el.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
+            return true;
+        },
+        { polling: 100 },
+        id
+    );
     await page.waitForSelector('.context-menu-item');
     await page.evaluate(() => {
-        const item = [...document.querySelectorAll('.context-menu-item')]
-            .find(el => /^(Pin Tab|Unpin Tab)$/.test(el.textContent));
+        const item = [...document.querySelectorAll('.context-menu-item')].find(el =>
+            /^(Pin Tab|Unpin Tab)$/.test(el.textContent)
+        );
         if (!item) throw new Error('Pin action missing');
         item.click();
     });
@@ -29,14 +34,19 @@ async function state() {
 }
 
 beforeAll(async () => {
-    server = createServer((req, res) => { res.setHeader('Content-Type', 'text/html'); res.end('<title>Same page</title><p>Duplicate URL fixture</p>'); });
+    server = createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/html');
+        res.end('<title>Same page</title><p>Duplicate URL fixture</p>');
+    });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     url = `http://127.0.0.1:${server.address().port}/`;
     const result = await launchBrowserWithExtension();
     browser = result.browser;
     page = await openSidebar(browser, result.extensionId);
     page.on('pageerror', error => console.error('Sidebar error:', error.message));
-    page.on('console', message => { if (message.type() === 'error') console.error('Sidebar console:', message.text()); });
+    page.on('console', message => {
+        if (message.type() === 'error') console.error('Sidebar console:', message.text());
+    });
     fixture = await page.evaluate(async url => {
         const { spaces } = await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'get' });
         const space = spaces[0];
@@ -47,25 +57,53 @@ beforeAll(async () => {
     await page.reload();
     await page.waitForSelector(row(fixture.a));
 });
-afterAll(async () => { await browser?.close(); if (server) await new Promise(resolve => server.close(resolve)); });
+afterAll(async () => {
+    await browser?.close();
+    if (server) await new Promise(resolve => server.close(resolve));
+});
 
 test('same-URL tabs remain distinct through pin, navigation, reload, close, reopen and unpin', async () => {
     await toggle(fixture.a);
-    await page.waitForFunction(id => document.querySelector(`.space.active [data-tab-type="pinned"] .tab[data-tab-id="${id}"][data-bookmark-id]`), { polling: 100 }, fixture.a);
+    await page.waitForFunction(
+        id =>
+            document.querySelector(
+                `.space.active [data-tab-type="pinned"] .tab[data-tab-id="${id}"][data-bookmark-id]`
+            ),
+        { polling: 100 },
+        fixture.a
+    );
     const first = (await state()).bindings[fixture.a].bookmarkId;
-    const b = await page.evaluate(async ({ url, spaceId }) => {
-        const tab = await chrome.tabs.create({ url: 'about:blank', active: false });
-        await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'assign', tabId: tab.id, spaceId });
-        await chrome.tabs.update(tab.id, { url });
-        return tab.id;
-    }, { url, spaceId: fixture.spaceId });
+    const b = await page.evaluate(
+        async ({ url, spaceId }) => {
+            const tab = await chrome.tabs.create({ url: 'about:blank', active: false });
+            await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'assign', tabId: tab.id, spaceId });
+            await chrome.tabs.update(tab.id, { url });
+            return tab.id;
+        },
+        { url, spaceId: fixture.spaceId }
+    );
     await page.waitForSelector(row(b));
-    await page.waitForFunction(id => document.querySelector(`.space.active [data-tab-type="temporary"] .tab[data-tab-id="${id}"]`), { polling: 100 }, b);
+    await page.waitForFunction(
+        id => document.querySelector(`.space.active [data-tab-type="temporary"] .tab[data-tab-id="${id}"]`),
+        { polling: 100 },
+        b
+    );
     expect((await state()).bindings[b]?.bookmarkId).toBeUndefined();
 
-    await page.waitForFunction(async ({ b, url }) => (await chrome.tabs.get(b)).url === url, { polling: 100 }, { b, url });
+    await page.waitForFunction(
+        async ({ b, url }) => (await chrome.tabs.get(b)).url === url,
+        { polling: 100 },
+        { b, url }
+    );
     await toggle(b);
-    await page.waitForFunction(id => document.querySelector(`.space.active [data-tab-type="pinned"] .tab[data-tab-id="${id}"][data-bookmark-id]`), { polling: 100 }, b);
+    await page.waitForFunction(
+        id =>
+            document.querySelector(
+                `.space.active [data-tab-type="pinned"] .tab[data-tab-id="${id}"][data-bookmark-id]`
+            ),
+        { polling: 100 },
+        b
+    );
     const second = (await state()).bindings[b].bookmarkId;
     expect(second).not.toBe(first);
     for (let i = 0; i < 2; i++) {
@@ -79,110 +117,202 @@ test('same-URL tabs remain distinct through pin, navigation, reload, close, reop
     await page.$eval(`${row(b)} .tab-close`, el => el.click());
     await page.waitForSelector(`.space.active .bookmark-only[data-bookmark-id="${second}"]`);
     await page.$eval(`.space.active .bookmark-only[data-bookmark-id="${second}"]`, el => el.click());
-    await page.waitForFunction(({ second, a }) => {
-        const el = document.querySelector(`.space.active .tab[data-bookmark-id="${second}"][data-tab-id]`);
-        return el && Number(el.dataset.tabId) !== a;
-    }, { polling: 100 }, { second, a: fixture.a });
-    const reopened = await page.$eval(`.space.active .tab[data-bookmark-id="${second}"][data-tab-id]`, el => Number(el.dataset.tabId));
+    await page.waitForFunction(
+        ({ second, a }) => {
+            const el = document.querySelector(`.space.active .tab[data-bookmark-id="${second}"][data-tab-id]`);
+            return el && Number(el.dataset.tabId) !== a;
+        },
+        { polling: 100 },
+        { second, a: fixture.a }
+    );
+    const reopened = await page.$eval(`.space.active .tab[data-bookmark-id="${second}"][data-tab-id]`, el =>
+        Number(el.dataset.tabId)
+    );
     await toggle(reopened);
-    await page.waitForFunction(id => document.querySelector(`.space.active [data-tab-type="temporary"] .tab[data-tab-id="${id}"]`), { polling: 100 }, reopened);
+    await page.waitForFunction(
+        id => document.querySelector(`.space.active [data-tab-type="temporary"] .tab[data-tab-id="${id}"]`),
+        { polling: 100 },
+        reopened
+    );
     expect(await page.evaluate(async id => (await chrome.bookmarks.get(id))[0].id, first)).toBe(first);
     expect(await page.evaluate(async id => (await chrome.tabs.get(id)).id, fixture.a)).toBe(fixture.a);
-    expect(await page.evaluate(async id => { try { await chrome.bookmarks.get(id); return true; } catch { return false; } }, second)).toBe(false);
+    expect(
+        await page.evaluate(async id => {
+            try {
+                await chrome.bookmarks.get(id);
+                return true;
+            } catch {
+                return false;
+            }
+        }, second)
+    ).toBe(false);
 }, 60000);
 
 test('favorite demotion keeps the captured middle temporary position after refresh and reload', async () => {
-    const ids = await page.evaluate(async ({ url, spaceId }) => {
-        const created = [];
-        for (const suffix of ['demote-favorite', 'demote-left', 'demote-right']) {
-            const tab = await chrome.tabs.create({ url: `${url}${suffix}`, active: false });
-            await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'assign', tabId: tab.id, spaceId });
-            created.push(tab.id);
-        }
-        return created;
-    }, { url, spaceId: fixture.spaceId });
+    const ids = await page.evaluate(
+        async ({ url, spaceId }) => {
+            const created = [];
+            for (const suffix of ['demote-favorite', 'demote-left', 'demote-right']) {
+                const tab = await chrome.tabs.create({ url: `${url}${suffix}`, active: false });
+                await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'assign', tabId: tab.id, spaceId });
+                created.push(tab.id);
+            }
+            return created;
+        },
+        { url, spaceId: fixture.spaceId }
+    );
     const [favorite, left, right] = ids;
     await page.waitForSelector(row(favorite));
     await page.waitForSelector(row(right));
     // Pin once the tab has its URL, or the favorite has none.
-    await page.waitForFunction(async ({ favorite, target }) => (await chrome.tabs.get(favorite)).url === target,
-        { polling: 100 }, { favorite, target: `${url}demote-favorite` });
+    await page.waitForFunction(
+        async ({ favorite, target }) => (await chrome.tabs.get(favorite)).url === target,
+        { polling: 100 },
+        { favorite, target: `${url}demote-favorite` }
+    );
     await toggle(favorite);
-    await page.waitForFunction(id => document.querySelector(`.space.active [data-tab-type="pinned"] .tab[data-tab-id="${id}"]`),
-        { polling: 100 }, favorite);
-    const desired = await page.evaluate(({ favorite, left, right }) => {
-        const dragged = document.querySelector(`.space.active [data-tab-type="pinned"] .tab[data-tab-id="${favorite}"]`);
-        const pair = [...document.querySelectorAll('.space.active [data-tab-type="temporary"] .tab[data-tab-id]')]
-            .filter(el => [left, right].includes(Number(el.dataset.tabId)));
-        const target = pair[1];
-        const container = target.closest('[data-tab-type="temporary"]');
-        dragged.classList.add('dragging');
-        const rect = target.getBoundingClientRect();
-        container.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientY: rect.top + rect.height / 2 - 1 }));
-        dragged.classList.remove('dragging');
-        return [Number(pair[0].dataset.tabId), favorite, Number(pair[1].dataset.tabId)];
-    }, { favorite, left, right });
-    await page.waitForFunction(desired => {
-        const ids = [...document.querySelectorAll('.space.active [data-tab-type="temporary"] .tab[data-tab-id]')].map(el => Number(el.dataset.tabId));
-        const positions = desired.map(id => ids.indexOf(id));
-        return positions.every(index => index >= 0) && positions[0] < positions[1] && positions[1] < positions[2];
-    }, { polling: 100 }, desired);
-    await page.waitForFunction(async ({ desired, favorite, spaceId }) => {
-        const { spaces, pinnedTabStatesById = {} } = await chrome.storage.local.get(['spaces', 'pinnedTabStatesById']);
-        const space = spaces.find(item => item.id === spaceId);
-        const { invertTabOrder = true } = await chrome.storage.sync.get({ invertTabOrder: true });
-        const display = invertTabOrder ? [...space.temporaryTabs].reverse() : space.temporaryTabs;
-        const positions = desired.map(id => display.indexOf(id));
-        return !pinnedTabStatesById[favorite] && positions.every(index => index >= 0) &&
-            positions[0] < positions[1] && positions[1] < positions[2];
-    }, { polling: 100 }, { desired, favorite, spaceId: fixture.spaceId });
+    await page.waitForFunction(
+        id => document.querySelector(`.space.active [data-tab-type="pinned"] .tab[data-tab-id="${id}"]`),
+        { polling: 100 },
+        favorite
+    );
+    const desired = await page.evaluate(
+        ({ favorite, left, right }) => {
+            const dragged = document.querySelector(
+                `.space.active [data-tab-type="pinned"] .tab[data-tab-id="${favorite}"]`
+            );
+            const pair = [
+                ...document.querySelectorAll('.space.active [data-tab-type="temporary"] .tab[data-tab-id]')
+            ].filter(el => [left, right].includes(Number(el.dataset.tabId)));
+            const target = pair[1];
+            const container = target.closest('[data-tab-type="temporary"]');
+            dragged.classList.add('dragging');
+            const rect = target.getBoundingClientRect();
+            container.dispatchEvent(
+                new DragEvent('drop', { bubbles: true, cancelable: true, clientY: rect.top + rect.height / 2 - 1 })
+            );
+            dragged.classList.remove('dragging');
+            return [Number(pair[0].dataset.tabId), favorite, Number(pair[1].dataset.tabId)];
+        },
+        { favorite, left, right }
+    );
+    await page.waitForFunction(
+        desired => {
+            const ids = [
+                ...document.querySelectorAll('.space.active [data-tab-type="temporary"] .tab[data-tab-id]')
+            ].map(el => Number(el.dataset.tabId));
+            const positions = desired.map(id => ids.indexOf(id));
+            return positions.every(index => index >= 0) && positions[0] < positions[1] && positions[1] < positions[2];
+        },
+        { polling: 100 },
+        desired
+    );
+    await page.waitForFunction(
+        async ({ desired, favorite, spaceId }) => {
+            const { spaces, pinnedTabStatesById = {} } = await chrome.storage.local.get([
+                'spaces',
+                'pinnedTabStatesById'
+            ]);
+            const space = spaces.find(item => item.id === spaceId);
+            const { invertTabOrder = true } = await chrome.storage.sync.get({ invertTabOrder: true });
+            const display = invertTabOrder ? [...space.temporaryTabs].reverse() : space.temporaryTabs;
+            const positions = desired.map(id => display.indexOf(id));
+            return (
+                !pinnedTabStatesById[favorite] &&
+                positions.every(index => index >= 0) &&
+                positions[0] < positions[1] &&
+                positions[1] < positions[2]
+            );
+        },
+        { polling: 100 },
+        { desired, favorite, spaceId: fixture.spaceId }
+    );
     await page.reload();
     await page.waitForSelector(row(favorite));
-    const order = await page.$$eval('.space.active [data-tab-type="temporary"] .tab[data-tab-id]', els => els.map(el => Number(el.dataset.tabId)));
+    const order = await page.$$eval('.space.active [data-tab-type="temporary"] .tab[data-tab-id]', els =>
+        els.map(el => Number(el.dataset.tabId))
+    );
     expect(order.indexOf(desired[0])).toBeLessThan(order.indexOf(desired[1]));
     expect(order.indexOf(desired[1])).toBeLessThan(order.indexOf(desired[2]));
 });
 
 test('undoing an open favorite unpin re-pins the same tab without opening a duplicate', async () => {
     const pinnedUrl = `${url}undo-unpin`;
-    const tabId = await page.evaluate(async ({ pinnedUrl, spaceId }) => {
-        const tab = await chrome.tabs.create({ url: pinnedUrl, active: false });
-        await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'assign', tabId: tab.id, spaceId });
-        return tab.id;
-    }, { pinnedUrl, spaceId: fixture.spaceId });
+    const tabId = await page.evaluate(
+        async ({ pinnedUrl, spaceId }) => {
+            const tab = await chrome.tabs.create({ url: pinnedUrl, active: false });
+            await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'assign', tabId: tab.id, spaceId });
+            return tab.id;
+        },
+        { pinnedUrl, spaceId: fixture.spaceId }
+    );
     await page.waitForSelector(row(tabId));
-    await page.waitForFunction(async ({ tabId, pinnedUrl }) => (await chrome.tabs.get(tabId)).url === pinnedUrl,
-        { polling: 100 }, { tabId, pinnedUrl });
+    await page.waitForFunction(
+        async ({ tabId, pinnedUrl }) => (await chrome.tabs.get(tabId)).url === pinnedUrl,
+        { polling: 100 },
+        { tabId, pinnedUrl }
+    );
     await toggle(tabId);
-    await page.waitForFunction(id => document.querySelector(`.space.active [data-tab-type="pinned"] .tab[data-tab-id="${id}"][data-bookmark-id]`),
-        { polling: 100 }, tabId);
+    await page.waitForFunction(
+        id =>
+            document.querySelector(
+                `.space.active [data-tab-type="pinned"] .tab[data-tab-id="${id}"][data-bookmark-id]`
+            ),
+        { polling: 100 },
+        tabId
+    );
     const original = (await state()).bindings[tabId].bookmarkId;
 
     await toggle(tabId);
-    await page.waitForFunction(id => document.querySelector(`.space.active [data-tab-type="temporary"] .tab[data-tab-id="${id}"]`),
-        { polling: 100 }, tabId);
-    expect(await page.evaluate(async id => { try { await chrome.bookmarks.get(id); return true; } catch { return false; } }, original)).toBe(false);
+    await page.waitForFunction(
+        id => document.querySelector(`.space.active [data-tab-type="temporary"] .tab[data-tab-id="${id}"]`),
+        { polling: 100 },
+        tabId
+    );
+    expect(
+        await page.evaluate(async id => {
+            try {
+                await chrome.bookmarks.get(id);
+                return true;
+            } catch {
+                return false;
+            }
+        }, original)
+    ).toBe(false);
     await page.$eval('#undoToast .undo-toast-button', el => el.click());
 
-    const restored = await (await page.waitForFunction(async ({ folderId, pinnedUrl }) =>
-        (await chrome.bookmarks.getChildren(folderId)).find(node => node.url === pinnedUrl)?.id,
-    { polling: 100 }, { folderId: fixture.folderId, pinnedUrl })).jsonValue();
+    const restored = await (
+        await page.waitForFunction(
+            async ({ folderId, pinnedUrl }) =>
+                (await chrome.bookmarks.getChildren(folderId)).find(node => node.url === pinnedUrl)?.id,
+            { polling: 100 },
+            { folderId: fixture.folderId, pinnedUrl }
+        )
+    ).jsonValue();
     const favorite = `.space.active [data-tab-type="pinned"] .tab[data-bookmark-id="${restored}"]`;
     await page.waitForSelector(`${favorite}[data-tab-id="${tabId}"]`);
     expect(await page.$$eval(`.space.active .tab[data-bookmark-id="${restored}"]`, els => els.length)).toBe(1);
-    expect(await page.$$eval(`.space.active [data-tab-type="temporary"] .tab[data-tab-id="${tabId}"]`, els => els.length)).toBe(0);
+    expect(
+        await page.$$eval(`.space.active [data-tab-type="temporary"] .tab[data-tab-id="${tabId}"]`, els => els.length)
+    ).toBe(0);
     expect((await state()).bindings[tabId]).toEqual({ pinnedUrl, bookmarkId: restored });
-    await page.waitForFunction(async ({ tabId, spaceId }) => {
-        const { spaces } = await chrome.storage.local.get('spaces');
-        const space = spaces.find(s => s.id === spaceId);
-        return space.spaceBookmarks.includes(tabId) && !space.temporaryTabs.includes(tabId);
-    }, { polling: 100 }, { tabId, spaceId: fixture.spaceId });
+    await page.waitForFunction(
+        async ({ tabId, spaceId }) => {
+            const { spaces } = await chrome.storage.local.get('spaces');
+            const space = spaces.find(s => s.id === spaceId);
+            return space.spaceBookmarks.includes(tabId) && !space.temporaryTabs.includes(tabId);
+        },
+        { polling: 100 },
+        { tabId, spaceId: fixture.spaceId }
+    );
 
     const tabCount = await page.evaluate(async () => (await chrome.tabs.query({})).length);
     await page.$eval(favorite, el => el.click());
     await page.waitForFunction(async id => (await chrome.tabs.get(id)).active, { polling: 100 }, tabId);
     expect(await page.evaluate(async () => (await chrome.tabs.query({})).length)).toBe(tabCount);
-    expect(await page.evaluate(async url => (await chrome.tabs.query({})).filter(t => t.url === url).length, pinnedUrl)).toBe(1);
+    expect(
+        await page.evaluate(async url => (await chrome.tabs.query({})).filter(t => t.url === url).length, pinnedUrl)
+    ).toBe(1);
 });
 
 test('native pinning does not hide its same-URL favorite', async () => {
@@ -194,35 +324,49 @@ test('native pinning does not hide its same-URL favorite', async () => {
 });
 
 test('closed URL twins render once each and a temporary reorder preserves every bookmark', async () => {
-    const ids = await page.evaluate(async ({ folderId, url }) => {
-        const a = await chrome.bookmarks.create({ parentId: folderId, url, title: 'Closed twin A' });
-        const folder = await chrome.bookmarks.create({ parentId: folderId, title: 'Nested twins' });
-        const b = await chrome.bookmarks.create({ parentId: folder.id, url, title: 'Closed twin B' });
-        return [a.id, b.id];
-    }, { folderId: fixture.folderId, url });
+    const ids = await page.evaluate(
+        async ({ folderId, url }) => {
+            const a = await chrome.bookmarks.create({ parentId: folderId, url, title: 'Closed twin A' });
+            const folder = await chrome.bookmarks.create({ parentId: folderId, title: 'Nested twins' });
+            const b = await chrome.bookmarks.create({ parentId: folder.id, url, title: 'Closed twin B' });
+            return [a.id, b.id];
+        },
+        { folderId: fixture.folderId, url }
+    );
     await page.reload();
     for (const id of ids) {
         await page.waitForSelector(`.space.active .bookmark-only[data-bookmark-id="${id}"]`);
         expect(await page.$$eval(`.space.active .tab[data-bookmark-id="${id}"]`, els => els.length)).toBe(1);
     }
-    const temp = await page.evaluate(async ({ url, spaceId }) => {
-        const tab = await chrome.tabs.create({ url, active: false });
-        await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'assign', tabId: tab.id, spaceId });
-        return tab.id;
-    }, { url, spaceId: fixture.spaceId });
-    await page.waitForFunction(id => {
-        const el = document.querySelector(`.space.active .tab[data-tab-id="${id}"]`);
-        if (!el) return false;
-        el.classList.add('dragging');
-        const container = el.closest('[data-tab-type="temporary"]');
-        container.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true }));
-        el.classList.remove('dragging');
-        return true;
-    }, { polling: 100 }, temp);
-    await page.waitForFunction(async id => {
-        const { spaces } = await chrome.storage.local.get('spaces');
-        return spaces.some(s => s.temporaryTabs.includes(id));
-    }, { polling: 100 }, temp);
+    const temp = await page.evaluate(
+        async ({ url, spaceId }) => {
+            const tab = await chrome.tabs.create({ url, active: false });
+            await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'assign', tabId: tab.id, spaceId });
+            return tab.id;
+        },
+        { url, spaceId: fixture.spaceId }
+    );
+    await page.waitForFunction(
+        id => {
+            const el = document.querySelector(`.space.active .tab[data-tab-id="${id}"]`);
+            if (!el) return false;
+            el.classList.add('dragging');
+            const container = el.closest('[data-tab-type="temporary"]');
+            container.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true }));
+            el.classList.remove('dragging');
+            return true;
+        },
+        { polling: 100 },
+        temp
+    );
+    await page.waitForFunction(
+        async id => {
+            const { spaces } = await chrome.storage.local.get('spaces');
+            return spaces.some(s => s.temporaryTabs.includes(id));
+        },
+        { polling: 100 },
+        temp
+    );
     await page.reload();
     for (const id of ids) {
         await page.waitForSelector(`.space.active .bookmark-only[data-bookmark-id="${id}"]`);
@@ -231,83 +375,143 @@ test('closed URL twins render once each and a temporary reorder preserves every 
 });
 
 test('external bookmark creation, rename and deletion update the open sidebar', async () => {
-    const id = await page.evaluate(async ({ folderId, url }) =>
-        (await chrome.bookmarks.create({ parentId: folderId, url: `${url}external`, title: 'External original' })).id,
-    { folderId: fixture.folderId, url });
+    const id = await page.evaluate(
+        async ({ folderId, url }) =>
+            (await chrome.bookmarks.create({ parentId: folderId, url: `${url}external`, title: 'External original' }))
+                .id,
+        { folderId: fixture.folderId, url }
+    );
     await page.waitForSelector(`.space.active .bookmark-only[data-bookmark-id="${id}"]`);
     await page.evaluate(id => chrome.bookmarks.update(id, { title: 'External renamed' }), id);
-    await page.waitForFunction(id => document.querySelector(`.space.active .tab[data-bookmark-id="${id}"] .tab-title-display`)?.textContent === 'External renamed',
-        { polling: 100 }, id);
+    await page.waitForFunction(
+        id =>
+            document.querySelector(`.space.active .tab[data-bookmark-id="${id}"] .tab-title-display`)?.textContent ===
+            'External renamed',
+        { polling: 100 },
+        id
+    );
     await page.evaluate(id => chrome.bookmarks.remove(id), id);
-    await page.waitForFunction(id => !document.querySelector(`.space.active .tab[data-bookmark-id="${id}"]`), { polling: 100 }, id);
+    await page.waitForFunction(
+        id => !document.querySelector(`.space.active .tab[data-bookmark-id="${id}"]`),
+        { polling: 100 },
+        id
+    );
 });
 
 test('moving the associated folder out of the Sidecove folder keeps live tabs visible and recovers by exact ID', async () => {
-    const [live, favorite] = await page.evaluate(async ({ url, spaceId }) => {
-        const ids = [];
-        for (const suffix of ['folder-recovery', 'folder-recovery-favorite']) {
-            const tab = await chrome.tabs.create({ url: `${url}${suffix}`, active: false });
-            await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'assign', tabId: tab.id, spaceId });
-            ids.push(tab.id);
-        }
-        return ids;
-    }, { url, spaceId: fixture.spaceId });
+    const [live, favorite] = await page.evaluate(
+        async ({ url, spaceId }) => {
+            const ids = [];
+            for (const suffix of ['folder-recovery', 'folder-recovery-favorite']) {
+                const tab = await chrome.tabs.create({ url: `${url}${suffix}`, active: false });
+                await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'assign', tabId: tab.id, spaceId });
+                ids.push(tab.id);
+            }
+            return ids;
+        },
+        { url, spaceId: fixture.spaceId }
+    );
     await page.waitForSelector(row(live));
     await page.waitForSelector(row(favorite));
     // Pin once the tab has its URL, or the favorite has none.
-    await page.waitForFunction(async ({ favorite, target }) => (await chrome.tabs.get(favorite)).url === target,
-        { polling: 100 }, { favorite, target: `${url}folder-recovery-favorite` });
+    await page.waitForFunction(
+        async ({ favorite, target }) => (await chrome.tabs.get(favorite)).url === target,
+        { polling: 100 },
+        { favorite, target: `${url}folder-recovery-favorite` }
+    );
     await toggle(favorite);
-    await page.waitForFunction(id => document.querySelector(`.space.active [data-tab-type="pinned"] .tab[data-tab-id="${id}"][data-bookmark-id]`),
-        { polling: 100 }, favorite);
+    await page.waitForFunction(
+        id =>
+            document.querySelector(
+                `.space.active [data-tab-type="pinned"] .tab[data-tab-id="${id}"][data-bookmark-id]`
+            ),
+        { polling: 100 },
+        favorite
+    );
     const bookmarkId = await page.$eval(row(favorite), el => el.dataset.bookmarkId);
-    const originalParent = await page.evaluate(async id => (await chrome.bookmarks.get(id))[0].parentId, fixture.folderId);
+    const originalParent = await page.evaluate(
+        async id => (await chrome.bookmarks.get(id))[0].parentId,
+        fixture.folderId
+    );
     await page.evaluate(id => chrome.bookmarks.move(id, { parentId: '1' }), fixture.folderId);
     await page.waitForSelector('.space.active .bookmark-association-error');
     await page.waitForSelector(`${row(favorite)}.favorite-fallback[data-bookmark-id="${bookmarkId}"]`);
     expect(await page.$$eval(row(live), els => els.length)).toBe(1);
     expect(await page.$$eval(row(favorite), els => els.length)).toBe(1);
-    await page.evaluate(({ id, parentId }) => chrome.bookmarks.move(id, { parentId }), { id: fixture.folderId, parentId: originalParent });
+    await page.evaluate(({ id, parentId }) => chrome.bookmarks.move(id, { parentId }), {
+        id: fixture.folderId,
+        parentId: originalParent
+    });
     await page.$eval('.space.active .bookmark-association-error button', el => el.click());
-    await page.waitForFunction(() => !document.querySelector('.space.active .bookmark-association-error'), { polling: 100 });
+    await page.waitForFunction(() => !document.querySelector('.space.active .bookmark-association-error'), {
+        polling: 100
+    });
     await page.waitForSelector(row(live));
-    await page.waitForSelector(`.space.active [data-tab-type="pinned"] .tab[data-tab-id="${favorite}"][data-bookmark-id="${bookmarkId}"]`);
+    await page.waitForSelector(
+        `.space.active [data-tab-type="pinned"] .tab[data-tab-id="${favorite}"][data-bookmark-id="${bookmarkId}"]`
+    );
 });
 
 test('degraded rendering keeps fallback favorites in bookmark order above inverted temporary tabs', async () => {
-    const [f1, f2, t1, t2] = await page.evaluate(async ({ url, spaceId }) => {
-        const ids = [];
-        for (const suffix of ['degraded-f1', 'degraded-f2', 'degraded-t1', 'degraded-t2']) {
-            const tab = await chrome.tabs.create({ url: `${url}${suffix}`, active: false });
-            await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'assign', tabId: tab.id, spaceId });
-            ids.push(tab.id);
-        }
-        return ids;
-    }, { url, spaceId: fixture.spaceId });
+    const [f1, f2, t1, t2] = await page.evaluate(
+        async ({ url, spaceId }) => {
+            const ids = [];
+            for (const suffix of ['degraded-f1', 'degraded-f2', 'degraded-t1', 'degraded-t2']) {
+                const tab = await chrome.tabs.create({ url: `${url}${suffix}`, active: false });
+                await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'assign', tabId: tab.id, spaceId });
+                ids.push(tab.id);
+            }
+            return ids;
+        },
+        { url, spaceId: fixture.spaceId }
+    );
     for (const id of [f1, f2, t1, t2]) await page.waitForSelector(row(id));
-    for (const [id, suffix] of [[f1, 'degraded-f1'], [f2, 'degraded-f2']]) {
+    for (const [id, suffix] of [
+        [f1, 'degraded-f1'],
+        [f2, 'degraded-f2']
+    ]) {
         // Pin once the tab has its URL, or the favorite has none.
-        await page.waitForFunction(async ({ id, target }) => (await chrome.tabs.get(id)).url === target,
-            { polling: 100 }, { id, target: `${url}${suffix}` });
+        await page.waitForFunction(
+            async ({ id, target }) => (await chrome.tabs.get(id)).url === target,
+            { polling: 100 },
+            { id, target: `${url}${suffix}` }
+        );
         await toggle(id);
-        await page.waitForFunction(id => document.querySelector(`.space.active [data-tab-type="pinned"] .tab[data-tab-id="${id}"][data-bookmark-id]`),
-            { polling: 100 }, id);
+        await page.waitForFunction(
+            id =>
+                document.querySelector(
+                    `.space.active [data-tab-type="pinned"] .tab[data-tab-id="${id}"][data-bookmark-id]`
+                ),
+            { polling: 100 },
+            id
+        );
     }
     const space = (await state()).spaces.find(s => s.id === fixture.spaceId);
     expect(space.spaceBookmarks.filter(id => id === f1 || id === f2)).toEqual([f1, f2]);
     expect(space.temporaryTabs.filter(id => id === t1 || id === t2)).toEqual([t1, t2]);
 
-    const originalParent = await page.evaluate(async id => (await chrome.bookmarks.get(id))[0].parentId, fixture.folderId);
+    const originalParent = await page.evaluate(
+        async id => (await chrome.bookmarks.get(id))[0].parentId,
+        fixture.folderId
+    );
     await page.evaluate(id => chrome.bookmarks.move(id, { parentId: '1' }), fixture.folderId);
     await page.waitForSelector('.space.active .bookmark-association-error');
     for (const id of [f1, f2]) await page.waitForSelector(`${row(id)}.favorite-fallback`);
-    const order = await page.$$eval('.space.active [data-tab-type="temporary"] .tab', (els, ids) =>
-        els.map(el => Number(el.dataset.tabId)).filter(id => ids.includes(id)), [f1, f2, t1, t2]);
+    const order = await page.$$eval(
+        '.space.active [data-tab-type="temporary"] .tab',
+        (els, ids) => els.map(el => Number(el.dataset.tabId)).filter(id => ids.includes(id)),
+        [f1, f2, t1, t2]
+    );
     expect(order).toEqual([f1, f2, t2, t1]);
 
-    await page.evaluate(({ id, parentId }) => chrome.bookmarks.move(id, { parentId }), { id: fixture.folderId, parentId: originalParent });
+    await page.evaluate(({ id, parentId }) => chrome.bookmarks.move(id, { parentId }), {
+        id: fixture.folderId,
+        parentId: originalParent
+    });
     await page.$eval('.space.active .bookmark-association-error button', el => el.click());
-    await page.waitForFunction(() => !document.querySelector('.space.active .bookmark-association-error'), { polling: 100 });
+    await page.waitForFunction(() => !document.querySelector('.space.active .bookmark-association-error'), {
+        polling: 100
+    });
     await page.waitForSelector(`.space.active [data-tab-type="pinned"] .tab[data-tab-id="${f1}"][data-bookmark-id]`);
 });
 
@@ -315,18 +519,42 @@ test('service-worker ordering matches real Chrome move semantics and rejects par
     const ordered = await page.evaluate(async folderId => {
         const folder = await chrome.bookmarks.create({ parentId: folderId, title: 'Order fixture' });
         const nodes = [];
-        for (const title of ['A', 'B', 'C']) nodes.push(await chrome.bookmarks.create({ parentId: folder.id, title, url: `https://${title.toLowerCase()}.test/` }));
+        for (const title of ['A', 'B', 'C'])
+            nodes.push(
+                await chrome.bookmarks.create({
+                    parentId: folder.id,
+                    title,
+                    url: `https://${title.toLowerCase()}.test/`
+                })
+            );
         const request = parents => chrome.runtime.sendMessage({ type: 'bookmarkOrder', operation: { parents } });
         const initial = nodes.map(node => node.id);
         const firstOrder = [nodes[2].id, nodes[0].id, nodes[1].id];
         const finalOrder = [nodes[1].id, nodes[2].id, nodes[0].id];
-        const first = await request([{ parentId: folder.id, expectedCanonicalIds: initial, desiredCanonicalIds: firstOrder }]);
-        const stale = await request([{ parentId: folder.id, expectedCanonicalIds: initial,
-            desiredCanonicalIds: [nodes[1].id, nodes[0].id, nodes[2].id] }]);
-        const second = await request([{ parentId: folder.id, expectedCanonicalIds: firstOrder, desiredCanonicalIds: finalOrder }]);
-        const partial = await request([{ parentId: folder.id, expectedCanonicalIds: finalOrder,
-            desiredCanonicalIds: [nodes[0].id, nodes[1].id] }]);
-        return { first, stale, second, partial, live: (await chrome.bookmarks.getChildren(folder.id)).map(node => node.id), ids: nodes.map(node => node.id) };
+        const first = await request([
+            { parentId: folder.id, expectedCanonicalIds: initial, desiredCanonicalIds: firstOrder }
+        ]);
+        const stale = await request([
+            {
+                parentId: folder.id,
+                expectedCanonicalIds: initial,
+                desiredCanonicalIds: [nodes[1].id, nodes[0].id, nodes[2].id]
+            }
+        ]);
+        const second = await request([
+            { parentId: folder.id, expectedCanonicalIds: firstOrder, desiredCanonicalIds: finalOrder }
+        ]);
+        const partial = await request([
+            { parentId: folder.id, expectedCanonicalIds: finalOrder, desiredCanonicalIds: [nodes[0].id, nodes[1].id] }
+        ]);
+        return {
+            first,
+            stale,
+            second,
+            partial,
+            live: (await chrome.bookmarks.getChildren(folder.id)).map(node => node.id),
+            ids: nodes.map(node => node.id)
+        };
     }, fixture.folderId);
     expect(ordered.first.success).toBe(true);
     expect(ordered.stale.success).toBe(false);
@@ -338,28 +566,47 @@ test('service-worker ordering matches real Chrome move semantics and rejects par
 });
 
 test('reordering native pinned favicons updates Chrome and survives reload', async () => {
-    const another = await page.evaluate(async url => (await chrome.tabs.create({ url, pinned: true, active: false })).id, url);
+    const another = await page.evaluate(
+        async url => (await chrome.tabs.create({ url, pinned: true, active: false })).id,
+        url
+    );
     await page.waitForSelector(`#pinnedFavicons [data-tab-id="${another}"]`);
     await page.$eval(`#pinnedFavicons [data-tab-id="${fixture.a}"]`, el => {
         el.classList.add('dragging');
         el.parentElement.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientX: 100000 }));
         el.classList.remove('dragging');
     });
-    await page.waitForFunction(async id => {
-        const tabs = await chrome.tabs.query({ pinned: true, currentWindow: true });
-        return tabs.sort((a, b) => a.index - b.index).at(-1)?.id === id;
-    }, { polling: 100 }, fixture.a);
+    await page.waitForFunction(
+        async id => {
+            const tabs = await chrome.tabs.query({ pinned: true, currentWindow: true });
+            return tabs.sort((a, b) => a.index - b.index).at(-1)?.id === id;
+        },
+        { polling: 100 },
+        fixture.a
+    );
     await page.reload();
     await page.waitForSelector(`#pinnedFavicons [data-tab-id="${another}"]`);
-    expect(await page.$$eval('#pinnedFavicons .pinned-favicon', els => Number(els.at(-1).dataset.tabId))).toBe(fixture.a);
+    expect(await page.$$eval('#pinnedFavicons .pinned-favicon', els => Number(els.at(-1).dataset.tabId))).toBe(
+        fixture.a
+    );
 });
 
 test('new folders have a bookmark identity before naming and remain usable after Escape', async () => {
     const before = await page.$$eval('.space.active .folder', els => els.map(el => el.dataset.bookmarkId));
     await page.$eval('.space.active .new-folder-btn', el => el.click());
-    await page.waitForFunction(before => [...document.querySelectorAll('.space.active .folder')]
-        .some(el => el.dataset.bookmarkId && !before.includes(el.dataset.bookmarkId)), { polling: 100 }, before);
-    const id = await page.$$eval('.space.active .folder', (els, before) => els.find(el => !before.includes(el.dataset.bookmarkId)).dataset.bookmarkId, before);
+    await page.waitForFunction(
+        before =>
+            [...document.querySelectorAll('.space.active .folder')].some(
+                el => el.dataset.bookmarkId && !before.includes(el.dataset.bookmarkId)
+            ),
+        { polling: 100 },
+        before
+    );
+    const id = await page.$$eval(
+        '.space.active .folder',
+        (els, before) => els.find(el => !before.includes(el.dataset.bookmarkId)).dataset.bookmarkId,
+        before
+    );
     expect(await page.evaluate(async id => (await chrome.bookmarks.get(id))[0].title, id)).toBe('Untitled');
     await page.$eval(`.space.active .folder[data-bookmark-id="${id}"] > .folder-header .folder-name`, el => {
         el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
@@ -371,19 +618,37 @@ test('new folders have a bookmark identity before naming and remain usable after
 test('new folder editor survives its own bookmark event and commits once after slow typing', async () => {
     const before = await page.$$eval('.space.active .folder', els => els.map(el => el.dataset.bookmarkId));
     await page.$eval('.space.active .new-folder-btn', el => el.click());
-    await page.waitForFunction(before => [...document.querySelectorAll('.space.active .folder')]
-        .some(el => el.dataset.bookmarkId && !before.includes(el.dataset.bookmarkId)), { polling: 100 }, before);
-    const id = await page.$$eval('.space.active .folder', (els, before) => els.find(el => !before.includes(el.dataset.bookmarkId)).dataset.bookmarkId, before);
+    await page.waitForFunction(
+        before =>
+            [...document.querySelectorAll('.space.active .folder')].some(
+                el => el.dataset.bookmarkId && !before.includes(el.dataset.bookmarkId)
+            ),
+        { polling: 100 },
+        before
+    );
+    const id = await page.$$eval(
+        '.space.active .folder',
+        (els, before) => els.find(el => !before.includes(el.dataset.bookmarkId)).dataset.bookmarkId,
+        before
+    );
     const selector = `.space.active .folder[data-bookmark-id="${id}"] > .folder-header .folder-name`;
-    await page.$eval(selector, input => { input.value = 'Slow'; input.dispatchEvent(new Event('input', { bubbles: true })); });
+    await page.$eval(selector, input => {
+        input.value = 'Slow';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
     await new Promise(resolve => setTimeout(resolve, 350));
-    expect(await page.$eval(selector, input => ({ value: input.value, focused: document.activeElement === input })))
-        .toEqual({ value: 'Slow', focused: true });
+    expect(
+        await page.$eval(selector, input => ({ value: input.value, focused: document.activeElement === input }))
+    ).toEqual({ value: 'Slow', focused: true });
     await page.$eval(selector, input => {
         input.value += ' folder';
         input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     });
-    await page.waitForFunction(async id => (await chrome.bookmarks.get(id))[0].title === 'Slow folder', { polling: 100 }, id);
+    await page.waitForFunction(
+        async id => (await chrome.bookmarks.get(id))[0].title === 'Slow folder',
+        { polling: 100 },
+        id
+    );
     expect(await page.$$eval(`.space.active .folder[data-bookmark-id="${id}"]`, els => els.length)).toBe(1);
 });
 
@@ -392,19 +657,45 @@ test('deleting one of two same-named spaces removes only its exact bookmark fold
         const [home] = await chrome.bookmarks.get(folderId);
         const first = await chrome.bookmarks.create({ parentId: home.parentId, title: 'Duplicate space' });
         const second = await chrome.bookmarks.create({ parentId: home.parentId, title: 'Duplicate space' });
-        const kept = await chrome.bookmarks.create({ parentId: first.id, url: 'https://keep.test/', title: 'Keep this' });
-        const removed = await chrome.bookmarks.create({ parentId: second.id, url: 'https://remove.test/', title: 'Remove this' });
+        const kept = await chrome.bookmarks.create({
+            parentId: first.id,
+            url: 'https://keep.test/',
+            title: 'Keep this'
+        });
+        const removed = await chrome.bookmarks.create({
+            parentId: second.id,
+            url: 'https://remove.test/',
+            title: 'Remove this'
+        });
         const { spaces } = await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'get' });
-        return { first: first.id, second: second.id, kept: kept.id, removed: removed.id,
-            spaceId: spaces.find(s => s.bookmarkFolderId === second.id).id };
+        return {
+            first: first.id,
+            second: second.id,
+            kept: kept.id,
+            removed: removed.id,
+            spaceId: spaces.find(s => s.bookmarkFolderId === second.id).id
+        };
     }, fixture.folderId);
     await page.reload();
     await page.waitForSelector(`.space[data-space-id="${twin.spaceId}"] .delete-space-btn`);
     page.once('dialog', dialog => dialog.accept());
     await page.$eval(`.space[data-space-id="${twin.spaceId}"] .delete-space-btn`, el => el.click());
-    await page.waitForFunction(async id => {
-        try { await chrome.bookmarks.get(id); return false; } catch { return true; }
-    }, { polling: 100 }, twin.second);
+    await page.waitForFunction(
+        async id => {
+            try {
+                await chrome.bookmarks.get(id);
+                return false;
+            } catch {
+                return true;
+            }
+        },
+        { polling: 100 },
+        twin.second
+    );
     expect(await page.evaluate(async id => (await chrome.bookmarks.get(id))[0].parentId, twin.kept)).toBe(twin.first);
-    await page.waitForFunction(async id => !(await chrome.storage.local.get('spaces')).spaces.some(s => s.id === id), { polling: 100 }, twin.spaceId);
+    await page.waitForFunction(
+        async id => !(await chrome.storage.local.get('spaces')).spaces.some(s => s.id === id),
+        { polling: 100 },
+        twin.spaceId
+    );
 });

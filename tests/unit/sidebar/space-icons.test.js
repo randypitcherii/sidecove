@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeSpaceIcon, SPACE_ICON_CHOICES, SPACE_SYMBOLS, spaceSymbol, searchSpaceIcons, isTypedEmoji } from '../../../src/sidebar/space-icons.js';
+import {
+    normalizeSpaceIcon,
+    SPACE_ICON_CHOICES,
+    SPACE_SYMBOLS,
+    spaceSymbol,
+    searchSpaceIcons,
+    isTypedEmoji
+} from '../../../src/sidebar/space-icons.js';
 
 test('a space icon is a single emoji or character', () => {
     assert.equal(normalizeSpaceIcon('🎵'), '🎵');
@@ -48,7 +55,12 @@ test('every symbol is drawn only from plain shapes', () => {
         assert.ok(symbol.nodes.length > 0, symbol.name);
         for (const [tag, attrs] of symbol.nodes) {
             assert.ok(shapes.has(tag), `${symbol.name}: ${tag}`);
-            for (const name of Object.keys(attrs)) assert.match(name, /^(d|cx|cy|r|rx|ry|x|y|x1|y1|x2|y2|width|height|points|fill)$/, `${symbol.name}: ${name}`);
+            for (const name of Object.keys(attrs))
+                assert.match(
+                    name,
+                    /^(d|cx|cy|r|rx|ry|x|y|x1|y1|x2|y2|width|height|points|fill)$/,
+                    `${symbol.name}: ${name}`
+                );
         }
     }
 });

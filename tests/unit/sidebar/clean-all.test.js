@@ -17,9 +17,15 @@ function fakes() {
                 return true;
             },
             removeTabs: async ids => calls.push(['remove', ids]),
-            createTab: async props => { calls.push(['create', props]); return { id: nextId++ }; },
+            createTab: async props => {
+                calls.push(['create', props]);
+                return { id: nextId++ };
+            },
             assignTab: async (tabId, spaceId) => calls.push(['assign', tabId, spaceId]),
-            removeArchivedTab: async (url, spaceId) => { calls.push(['unarchive', url, spaceId]); archive.delete(url); }
+            removeArchivedTab: async (url, spaceId) => {
+                calls.push(['unarchive', url, spaceId]);
+                archive.delete(url);
+            }
         }
     };
 }
@@ -39,9 +45,14 @@ test('Clean All archives every closed tab before closing them together', async (
         ['archive', 'https://c.example/', 'C', 'home'],
         ['remove', [1, 2, 3]]
     ]);
-    assert.deepEqual(records.map(r => [r.url, r.addedToArchive]), [
-        ['https://a.example/', true], ['https://already.example/', false], ['https://c.example/', true]
-    ]);
+    assert.deepEqual(
+        records.map(r => [r.url, r.addedToArchive]),
+        [
+            ['https://a.example/', true],
+            ['https://already.example/', false],
+            ['https://c.example/', true]
+        ]
+    );
 });
 
 test('Clean All with nothing to close does nothing', async () => {

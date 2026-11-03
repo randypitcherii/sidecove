@@ -17,16 +17,20 @@ export async function canCreateFolder(spaceFolderId, parentId) {
 }
 
 export async function createFolder(spaceFolderId, parentId, title) {
-    if (!await canCreateFolder(spaceFolderId, parentId)) {
-        throw new Error(`Nested folders require tab group sync to be off and support up to ${MAX_FOLDER_DEPTH} folder levels.`);
+    if (!(await canCreateFolder(spaceFolderId, parentId))) {
+        throw new Error(
+            `Nested folders require tab group sync to be off and support up to ${MAX_FOLDER_DEPTH} folder levels.`
+        );
     }
     return chrome.bookmarks.create({ parentId, title });
 }
 
 // True when targetId is the folder node itself or anywhere inside it.
 export function isDescendant(folderNode, targetId) {
-    return String(folderNode.id) === String(targetId)
-        || (folderNode.children || []).some(child => isDescendant(child, targetId));
+    return (
+        String(folderNode.id) === String(targetId) ||
+        (folderNode.children || []).some(child => isDescendant(child, targetId))
+    );
 }
 
 // Moving a folder must keep it out of its own subtree, and moving it into a new parent

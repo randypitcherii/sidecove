@@ -2,7 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-    parseSpaceCommand, spaceRequestFromKey, resolveSpaceTarget, scrollLeftToReveal, switchSpaceWithoutSidebar
+    parseSpaceCommand,
+    spaceRequestFromKey,
+    resolveSpaceTarget,
+    scrollLeftToReveal,
+    switchSpaceWithoutSidebar
 } from '../../../src/shared/space-navigation.js';
 
 const spaces = ['home', 'work', 'music', 'read'].map(id => ({ id, spaceBookmarks: [], temporaryTabs: [] }));
@@ -71,18 +75,31 @@ test('without a sidebar the command activates the target space and its last tab'
     const calls = [];
     const chromeApi = {
         tabs: {
-            query: async ({ active }) => active ? [{ id: 2, windowId: 9 }] : [1, 2, 3, 4, 5].map(id => ({ id, windowId: 9 })),
+            query: async ({ active }) =>
+                active ? [{ id: 2, windowId: 9 }] : [1, 2, 3, 4, 5].map(id => ({ id, windowId: 9 })),
             update: async (id, props) => calls.push(['update', id, props])
         },
         storage: { session: { get: async () => ({ activeSpaces: {} }) } }
     };
-    const dispatch = async message => { calls.push([message.action, message.spaceId]); return stored; };
+    const dispatch = async message => {
+        calls.push([message.action, message.spaceId]);
+        return stored;
+    };
     assert.equal(await switchSpaceWithoutSidebar({ chromeApi, dispatch, windowId: 9, request: { delta: 1 } }), 'work');
-    assert.deepEqual(calls.filter(c => c[0] !== 'get'), [['activate', 'work'], ['update', 3, { active: true }]]);
+    assert.deepEqual(
+        calls.filter(c => c[0] !== 'get'),
+        [
+            ['activate', 'work'],
+            ['update', 3, { active: true }]
+        ]
+    );
 
     calls.length = 0;
     assert.equal(await switchSpaceWithoutSidebar({ chromeApi, dispatch, windowId: 9, request: { slot: 3 } }), 'empty');
-    assert.deepEqual(calls.filter(c => c[0] !== 'get'), [['activate', 'empty']]);
+    assert.deepEqual(
+        calls.filter(c => c[0] !== 'get'),
+        [['activate', 'empty']]
+    );
 });
 
 test('without a sidebar stepping past an empty space keeps advancing', async () => {
@@ -95,7 +112,7 @@ test('without a sidebar stepping past an empty space keeps advancing', async () 
     const calls = [];
     const chromeApi = {
         tabs: {
-            query: async ({ active }) => active ? [{ id: 1, windowId: 9 }] : [1, 2].map(id => ({ id, windowId: 9 })),
+            query: async ({ active }) => (active ? [{ id: 1, windowId: 9 }] : [1, 2].map(id => ({ id, windowId: 9 }))),
             update: async (id, props) => calls.push(['update', id, props])
         },
         storage: { session: { get: async () => ({ activeSpaces: { ...activeSpaces } }) } }
@@ -109,7 +126,11 @@ test('without a sidebar stepping past an empty space keeps advancing', async () 
     };
     assert.equal(await switchSpaceWithoutSidebar({ chromeApi, dispatch, windowId: 9, request: { delta: 1 } }), 'empty');
     assert.equal(await switchSpaceWithoutSidebar({ chromeApi, dispatch, windowId: 9, request: { delta: 1 } }), 'work');
-    assert.deepEqual(calls, [['activate', 'empty'], ['activate', 'work'], ['update', 2, { active: true }]]);
+    assert.deepEqual(calls, [
+        ['activate', 'empty'],
+        ['activate', 'work'],
+        ['update', 2, { active: true }]
+    ]);
 
     calls.length = 0;
     activeSpaces[9] = 'deleted';

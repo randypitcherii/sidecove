@@ -29,8 +29,11 @@ export class SpacePatchQueue {
                 // Invalidate even submissions made while recovery is awaiting I/O.
                 this.epoch++;
                 this.blocked = true;
-                try { this.reset(await this.recover(error)); }
-                finally { this.epoch++; }
+                try {
+                    this.reset(await this.recover(error));
+                } finally {
+                    this.epoch++;
+                }
                 throw error;
             }
         });

@@ -1,11 +1,11 @@
 import { firstUnusedColor } from './space-colors.js';
 /**
  * DOMManager - Sidebar DOM manipulation and UI component management
- * 
+ *
  * Purpose: Handles dynamic DOM creation, updates, and event handling for sidebar interface
  * Key Functions: Space/tab DOM rendering, context menus, input dialogs, drag-and-drop visual feedback
  * Architecture: Collection of utility functions for DOM manipulation and UI state management
- * 
+ *
  * Critical Notes:
  * - Separates DOM manipulation logic from business logic in sidebar.js
  * - Handles complex UI interactions like drag-and-drop visual feedback
@@ -49,15 +49,19 @@ export function setupDOMElements(createNewSpace, getSpaces = () => []) {
     //      momentum and the correct direction on trackpads).
     //   2. Always stopPropagation so the outer space-switch handler never
     //      sees chip-strip gestures, regardless of axis.
-    spaceSwitcher.addEventListener('wheel', (event) => {
-        if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+    spaceSwitcher.addEventListener(
+        'wheel',
+        event => {
+            if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+                event.stopPropagation();
+                return;
+            }
+            event.preventDefault();
             event.stopPropagation();
-            return;
-        }
-        event.preventDefault();
-        event.stopPropagation();
-        spaceSwitcher.scrollLeft += event.deltaY;
-    }, { passive: false });
+            spaceSwitcher.scrollLeft += event.deltaY;
+        },
+        { passive: false }
+    );
 
     // Add event listeners for buttons
     addSpaceBtn.addEventListener('click', () => {
@@ -93,7 +97,7 @@ export function setupDOMElements(createNewSpace, getSpaces = () => []) {
     });
 
     const createSpaceColorSwatch = document.getElementById('createSpaceColorSwatch');
-    createSpaceColorSwatch.addEventListener('click', (e) => {
+    createSpaceColorSwatch.addEventListener('click', e => {
         if (e.target.classList.contains('color-swatch')) {
             const colorPicker = document.getElementById('createSpaceColorSwatch');
             const select = document.getElementById('spaceColor');
@@ -125,7 +129,7 @@ export function setupDOMElements(createNewSpace, getSpaces = () => []) {
     });
 
     // Add input validation for new space name
-    document.getElementById('newSpaceName').addEventListener('input', (e) => {
+    document.getElementById('newSpaceName').addEventListener('input', e => {
         const createSpaceBtn = document.getElementById('createSpaceBtn');
         createSpaceBtn.disabled = !e.target.value.trim();
     });
@@ -186,15 +190,37 @@ export function activateSpaceInDOM(spaceId, spaces, updateSpaceSwitcher) {
     if (space) {
         // Update background color
         const sidebarContainer = document.getElementById('sidebar-container');
-        sidebarContainer.style.setProperty('--space-bg-color', `var(--chrome-${space.color}-color, rgba(255, 255, 255, 0.1))`);
-        sidebarContainer.style.setProperty('--space-bg-color-dark', `var(--chrome-${space.color}-color-dark, rgba(255, 255, 255, 0.1))`);
+        sidebarContainer.style.setProperty(
+            '--space-bg-color',
+            `var(--chrome-${space.color}-color, rgba(255, 255, 255, 0.1))`
+        );
+        sidebarContainer.style.setProperty(
+            '--space-bg-color-dark',
+            `var(--chrome-${space.color}-color-dark, rgba(255, 255, 255, 0.1))`
+        );
     }
 
     // Update space switcher
     updateSpaceSwitcher();
 }
 
-export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabElement, closeTab, spaces, moveTabToSpace, setActiveSpace, allBookmarkSpaceFolders, createSpaceFromInactive, onReplaceBookmarkUrlWithCurrent = null, moveFavoriteToSpace = null, { muted = false, onRename = null } = {}) {
+export function showTabContextMenu(
+    x,
+    y,
+    tab,
+    isPinned,
+    isBookmarkOnly,
+    tabElement,
+    closeTab,
+    spaces,
+    moveTabToSpace,
+    setActiveSpace,
+    allBookmarkSpaceFolders,
+    createSpaceFromInactive,
+    onReplaceBookmarkUrlWithCurrent = null,
+    moveFavoriteToSpace = null,
+    { muted = false, onRename = null } = {}
+) {
     // Remove any existing context menus
     const existingMenu = document.getElementById('tab-context-menu');
     if (existingMenu) {
@@ -254,7 +280,9 @@ export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabEleme
 
         // Arc's tab menu: duplicate, mute and rename the tab.
         addMenuItem(contextMenu, 'Duplicate Tab', () => chrome.tabs.duplicate(tab.id));
-        addMenuItem(contextMenu, muted ? 'Unmute Tab' : 'Mute Tab', () => chrome.tabs.update(tab.id, { muted: !muted }));
+        addMenuItem(contextMenu, muted ? 'Unmute Tab' : 'Mute Tab', () =>
+            chrome.tabs.update(tab.id, { muted: !muted })
+        );
         if (typeof onRename === 'function') addMenuItem(contextMenu, 'Rename Tab', onRename);
     }
 
@@ -262,7 +290,11 @@ export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabEleme
     addMenuItem(contextMenu, 'Copy Link', async () => {
         let url = tabElement.dataset.url || tab.url;
         if (!isBookmarkOnly && tab.id) {
-            try { url = (await chrome.tabs.get(tab.id)).url || url; } catch { /* closed meanwhile */ }
+            try {
+                url = (await chrome.tabs.get(tab.id)).url || url;
+            } catch {
+                /* closed meanwhile */
+            }
         }
         if (await copyText(url)) showUrlCopyToast('Copied link');
     });
@@ -289,7 +321,7 @@ export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabEleme
             const submenuItem = document.createElement('div');
             submenuItem.className = 'context-menu-item';
             submenuItem.textContent = space.name;
-            submenuItem.addEventListener('click', async (e) => {
+            submenuItem.addEventListener('click', async e => {
                 e.stopPropagation();
                 contextMenu.remove(); // Close menu immediately for better UX
 
@@ -314,7 +346,9 @@ export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabEleme
         // Add inactive spaces
         const activeSpaceNames = new Set(spaces.map(s => s.name));
         // Creating an inactive space needs a live tab, which unloaded favorites do not have.
-        const inactiveSpaceFolders = isBookmarkOnly ? [] : allBookmarkSpaceFolders.filter(f => !f.url && !activeSpaceNames.has(f.title));
+        const inactiveSpaceFolders = isBookmarkOnly
+            ? []
+            : allBookmarkSpaceFolders.filter(f => !f.url && !activeSpaceNames.has(f.title));
 
         if (otherActiveSpaces.length > 0 && inactiveSpaceFolders.length > 0) {
             const separator = document.createElement('div');
@@ -326,7 +360,7 @@ export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabEleme
             const submenuItem = document.createElement('div');
             submenuItem.className = 'context-menu-item';
             submenuItem.textContent = folder.title;
-            submenuItem.addEventListener('click', (e) => {
+            submenuItem.addEventListener('click', e => {
                 e.stopPropagation();
                 createSpaceFromInactive(folder.title, tab);
                 contextMenu.remove();
@@ -401,7 +435,7 @@ export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabEleme
     Utils.adjustMenuPosition(contextMenu, x, y);
 
     // Close context menu when clicking outside
-    const closeContextMenu = (e) => {
+    const closeContextMenu = e => {
         if (!contextMenu.contains(e.target)) {
             contextMenu.remove();
             document.removeEventListener('click', closeContextMenu, { capture: true }); // Use capture phase
@@ -466,12 +500,12 @@ export async function showArchivedTabsPopup(activeSpaceId) {
     controls.appendChild(timeContainer);
 
     // Event listeners
-    toggle.addEventListener('change', async (e) => {
+    toggle.addEventListener('change', async e => {
         const enabled = toggle.checked;
         timeInput.disabled = !enabled;
         await Utils.setArchivingEnabled(enabled);
     });
-    timeInput.addEventListener('change', async (e) => {
+    timeInput.addEventListener('change', async e => {
         let val = parseFloat(timeInput.value);
         if (isNaN(val) || val < 0.25) val = 0.25; // Minimum 15 minutes
         timeInput.value = val.toFixed(2);
@@ -498,7 +532,9 @@ export async function showArchivedTabsPopup(activeSpaceId) {
             const favicon = document.createElement('img');
             favicon.src = Utils.getFaviconUrl(archivedTab.url);
             favicon.className = 'tab-favicon';
-            favicon.onerror = () => { favicon.src = 'assets/default_icon.png'; };
+            favicon.onerror = () => {
+                favicon.src = 'assets/default_icon.png';
+            };
 
             const details = document.createElement('div');
             details.className = 'tab-details';
@@ -511,7 +547,7 @@ export async function showArchivedTabsPopup(activeSpaceId) {
             restoreButton.innerHTML = RESTORE_ICON;
             restoreButton.className = 'tab-restore';
             restoreButton.style.marginLeft = 'auto';
-            item.addEventListener('click', (e) => {
+            item.addEventListener('click', e => {
                 e.stopPropagation();
                 Utils.restoreArchivedTab(archivedTab);
                 item.remove();
@@ -588,7 +624,7 @@ function addMenuItem(menu, label, action) {
     const item = document.createElement('div');
     item.className = 'context-menu-item';
     item.textContent = label;
-    item.addEventListener('click', async (event) => {
+    item.addEventListener('click', async event => {
         event.stopPropagation();
         menu.closest('#tab-context-menu')?.remove();
         menu.remove();
@@ -675,87 +711,99 @@ export function showUndoToast(message, onUndo, duration = 5000) {
     toast.hideTimeout = setTimeout(hide, duration);
 }
 
-export function setupQuickPinListener(moveTabToSpace, moveTabToPinned, moveTabToTemp, currentActiveSpaceId, setActiveSpaceFunc, activatePinnedTabByURL) {
+export function setupQuickPinListener(
+    moveTabToSpace,
+    moveTabToPinned,
+    moveTabToTemp,
+    currentActiveSpaceId,
+    setActiveSpaceFunc,
+    activatePinnedTabByURL
+) {
     chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-        if (request.command === "quickPinToggle" || request.command === "toggleSpacePin") {
+        if (request.command === 'quickPinToggle' || request.command === 'toggleSpacePin') {
             Logger.log(`[QuickPin] Received command: ${request.command}`, { request });
             chrome.storage.local.get('spaces', function (result) {
                 const spaces = result.spaces || [];
-                Logger.log("[QuickPin] Loaded spaces from storage:", spaces);
+                Logger.log('[QuickPin] Loaded spaces from storage:', spaces);
 
-                const getTabAndToggle = async (tabToToggle) => {
+                const getTabAndToggle = async tabToToggle => {
                     const sidebarWindow = await chrome.windows.getCurrent();
                     if (tabToToggle?.windowId !== sidebarWindow.id) return;
                     if (!tabToToggle) {
-                        Logger.error("[QuickPin] No tab found to toggle.");
+                        Logger.error('[QuickPin] No tab found to toggle.');
                         return;
                     }
-                    Logger.log("[QuickPin] Toggling pin state for tab:", tabToToggle);
+                    Logger.log('[QuickPin] Toggling pin state for tab:', tabToToggle);
 
-                    const spaceWithTempTab = spaces.find(space =>
-                        space.temporaryTabs.includes(tabToToggle.id)
-                    );
+                    const spaceWithTempTab = spaces.find(space => space.temporaryTabs.includes(tabToToggle.id));
 
                     if (spaceWithTempTab) {
-                        Logger.log(`[QuickPin] Tab ${tabToToggle.id} is a temporary tab in space "${spaceWithTempTab.name}". Pinning it.`);
+                        Logger.log(
+                            `[QuickPin] Tab ${tabToToggle.id} is a temporary tab in space "${spaceWithTempTab.name}". Pinning it.`
+                        );
                         await moveTabToPinned(spaceWithTempTab, tabToToggle);
                     } else {
-                        const spaceWithBookmark = spaces.find(space =>
-                            space.spaceBookmarks.includes(tabToToggle.id)
-                        );
+                        const spaceWithBookmark = spaces.find(space => space.spaceBookmarks.includes(tabToToggle.id));
 
                         if (spaceWithBookmark) {
-                            Logger.log(`[QuickPin] Tab ${tabToToggle.id} is a bookmarked tab in space "${spaceWithBookmark.name}". Unpinning it.`);
+                            Logger.log(
+                                `[QuickPin] Tab ${tabToToggle.id} is a bookmarked tab in space "${spaceWithBookmark.name}". Unpinning it.`
+                            );
                             await moveTabToTemp(spaceWithBookmark, tabToToggle);
                         } else {
-                            Logger.warn(`[QuickPin] Tab ${tabToToggle.id} not found in any space as temporary or bookmarked.`);
+                            Logger.warn(
+                                `[QuickPin] Tab ${tabToToggle.id} not found in any space as temporary or bookmarked.`
+                            );
                         }
                     }
                 };
 
-                if (request.command === "quickPinToggle") {
-                    Logger.log("[QuickPin] Handling quickPinToggle for active tab.");
+                if (request.command === 'quickPinToggle') {
+                    Logger.log('[QuickPin] Handling quickPinToggle for active tab.');
                     chrome.tabs.query({ active: true, lastFocusedWindow: true }, function (tabs) {
                         getTabAndToggle(tabs[0]);
                     });
-                } else if (request.command === "toggleSpacePin" && request.tabId) {
+                } else if (request.command === 'toggleSpacePin' && request.tabId) {
                     Logger.log(`[QuickPin] Handling toggleSpacePin for tabId: ${request.tabId}`);
                     chrome.tabs.get(request.tabId, function (tab) {
                         getTabAndToggle(tab);
                     });
                 }
             });
-        } else if (request.command === "copyCurrentUrl") {
+        } else if (request.command === 'copyCurrentUrl') {
             // SIDEBAR FALLBACK: Handle URL copy when sidebar is focused
             Logger.log(`[URLCopy] Sidebar fallback - copying URL: ${request.url}`);
 
             // Use clipboard API to copy the URL
             if (navigator.clipboard && request.url) {
-                navigator.clipboard.writeText(request.url).then(() => {
-                    Logger.log(`[URLCopy] Sidebar fallback succeeded: ${request.url}`);
-                    showUrlCopyToast(); // Show success toast
-                    sendResponse({ success: true });
-                }).catch(err => {
-                    Logger.error("[URLCopy] Sidebar fallback failed:", err);
-                    sendResponse({ success: false, error: err.message });
-                });
+                navigator.clipboard
+                    .writeText(request.url)
+                    .then(() => {
+                        Logger.log(`[URLCopy] Sidebar fallback succeeded: ${request.url}`);
+                        showUrlCopyToast(); // Show success toast
+                        sendResponse({ success: true });
+                    })
+                    .catch(err => {
+                        Logger.error('[URLCopy] Sidebar fallback failed:', err);
+                        sendResponse({ success: false, error: err.message });
+                    });
             } else {
-                Logger.error("[URLCopy] Sidebar fallback failed: navigator.clipboard not available or no URL");
-                sendResponse({ success: false, error: "Clipboard API not available" });
+                Logger.error('[URLCopy] Sidebar fallback failed: navigator.clipboard not available or no URL');
+                sendResponse({ success: false, error: 'Clipboard API not available' });
             }
             return true; // Indicate async response
-        } else if (request.action === "urlCopySuccess") {
+        } else if (request.action === 'urlCopySuccess') {
             // Show toast when the background copies the URL through its offscreen document
-            Logger.log("[URLCopy] Received success message from background script");
+            Logger.log('[URLCopy] Received success message from background script');
             showUrlCopyToast();
             sendResponse({ success: true });
             return false; // Synchronous response
-        } else if (request.action === "activatePinnedTab") {
-            Logger.log("[Sidebar] Activating pinned tab:", request);
+        } else if (request.action === 'activatePinnedTab') {
+            Logger.log('[Sidebar] Activating pinned tab:', request);
 
             // Switch to the space if needed
             if (request.spaceId && currentActiveSpaceId !== request.spaceId) {
-                Logger.log("[Sidebar] Switching to space:", request.spaceId, request.spaceName);
+                Logger.log('[Sidebar] Switching to space:', request.spaceId, request.spaceName);
                 setActiveSpaceFunc(request.spaceId);
             }
 
@@ -790,17 +838,18 @@ export function getDragAfterElement(container, position, options = {}) {
         return placeholderSelector ? container.querySelector(placeholderSelector) : null;
     }
 
-    return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = axis === 'x'
-            ? position - box.left - box.width / 2
-            : position - box.top - box.height / 2;
+    return draggableElements.reduce(
+        (closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = axis === 'x' ? position - box.left - box.width / 2 : position - box.top - box.height / 2;
 
-        if (offset < 0 && offset > closest.offset) {
-            return { offset, element: child };
-        }
-        return closest;
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset, element: child };
+            }
+            return closest;
+        },
+        { offset: Number.NEGATIVE_INFINITY }
+    ).element;
 }
 
 // ============================================================================
@@ -863,8 +912,7 @@ export function getTempContainer(spaceElement) {
  * Clear active state from all tabs and pinned favicons
  */
 export function clearAllActiveStates() {
-    document.querySelectorAll('.tab, .pinned-favicon')
-        .forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab, .pinned-favicon').forEach(el => el.classList.remove('active'));
 }
 
 // ============================================================================
@@ -910,10 +958,14 @@ export function showDropLine(content, before, rowSelector) {
     const edge = next || previous;
     const left = edge ? edge.left : contentRect.left + parseFloat(style.paddingLeft);
     const right = edge ? edge.right : contentRect.right - parseFloat(style.paddingRight);
-    const y = previous && next ? (previous.bottom + next.top) / 2
-        : next ? next.top
-        : previous ? previous.bottom
-        : contentRect.top + parseFloat(style.paddingTop);
+    const y =
+        previous && next
+            ? (previous.bottom + next.top) / 2
+            : next
+              ? next.top
+              : previous
+                ? previous.bottom
+                : contentRect.top + parseFloat(style.paddingTop);
 
     if (!dropLine?.isConnected) {
         dropLine = document.createElement('div');

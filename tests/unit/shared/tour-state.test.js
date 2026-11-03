@@ -10,8 +10,10 @@ test('tour ignores stale and repeated next events, preserving the current step',
     assert.equal(reduceTour(next, { action: 'next', runId: 'old', step: 1 }), next);
 });
 test('skipped and finished tours cannot be revived by delayed achievements', () => {
-    for (const state of [reduceTour(start(), { action: 'stop', runId: 'first' }),
-        reduceTour(start(TOUR_STEPS.length - 1), { action: 'finish', runId: 'first', step: TOUR_STEPS.length - 1 })]) {
+    for (const state of [
+        reduceTour(start(), { action: 'stop', runId: 'first' }),
+        reduceTour(start(TOUR_STEPS.length - 1), { action: 'finish', runId: 'first', step: TOUR_STEPS.length - 1 })
+    ]) {
         assert.notEqual(state.status, 'active');
         assert.equal(reduceTour(state, { action: 'achieved', runId: 'first', step: state.step }), state);
     }
@@ -19,8 +21,14 @@ test('skipped and finished tours cannot be revived by delayed achievements', () 
 });
 test('the graduation CTA only finishes from the final step', () => {
     const finalStep = TOUR_STEPS.length - 1;
-    assert.equal(reduceTour(start(finalStep), { action: 'finish', runId: 'first', step: finalStep }).status, 'completed');
-    assert.equal(reduceTour(start(finalStep - 1), { action: 'finish', runId: 'first', step: finalStep - 1 }).status, 'active');
+    assert.equal(
+        reduceTour(start(finalStep), { action: 'finish', runId: 'first', step: finalStep }).status,
+        'completed'
+    );
+    assert.equal(
+        reduceTour(start(finalStep - 1), { action: 'finish', runId: 'first', step: finalStep - 1 }).status,
+        'active'
+    );
 });
 test('only observed achievements mark a feature tried; revisiting does not duplicate it', () => {
     let state = reduceTour(start(), { action: 'achieved', runId: 'first', step: 0 });
@@ -31,18 +39,48 @@ test('only observed achievements mark a feature tried; revisiting does not dupli
     assert.equal(start(100).step, TOUR_STEPS.length - 1);
 });
 test('background serializes competing sidebar and page events without stealing unrelated messages', async () => {
-    let listener; const local = {}; const sync = {};
-    globalThis.chrome = { runtime: { onMessage: { addListener(fn) { listener = fn; } }, getManifest: () => ({ version: '5.1.0' }) }, storage: {
-        local: { async get() { return { ...local }; }, async set(data) { Object.assign(local, data); } },
-        sync: { async set(data) { Object.assign(sync, data); } }
-    } };
+    let listener;
+    const local = {};
+    const sync = {};
+    globalThis.chrome = {
+        runtime: {
+            onMessage: {
+                addListener(fn) {
+                    listener = fn;
+                }
+            },
+            getManifest: () => ({ version: '5.1.0' })
+        },
+        storage: {
+            local: {
+                async get() {
+                    return { ...local };
+                },
+                async set(data) {
+                    Object.assign(local, data);
+                }
+            },
+            sync: {
+                async set(data) {
+                    Object.assign(sync, data);
+                }
+            }
+        }
+    };
     registerTourMessages();
-    assert.equal(listener({ type: 'spaceStore' }, {}, () => assert.fail('stole response')), undefined);
-    const send = message => new Promise(resolve => {
-        assert.equal(listener({ type: 'sidebarTour', ...message }, {}, resolve), true);
-    });
+    assert.equal(
+        listener({ type: 'spaceStore' }, {}, () => assert.fail('stole response')),
+        undefined
+    );
+    const send = message =>
+        new Promise(resolve => {
+            assert.equal(listener({ type: 'sidebarTour', ...message }, {}, resolve), true);
+        });
     await send({ action: 'start', runId: 'a', windowId: 7, step: 0 });
-    await Promise.all([send({ action: 'next', runId: 'a', step: 0 }), send({ action: 'achieved', runId: 'a', step: 0 })]);
+    await Promise.all([
+        send({ action: 'next', runId: 'a', step: 0 }),
+        send({ action: 'achieved', runId: 'a', step: 0 })
+    ]);
     assert.equal(local[TOUR_KEY].step, 1);
     await send({ action: 'stop', runId: 'a' });
     assert.equal(sync.onboardingCompleted, true);

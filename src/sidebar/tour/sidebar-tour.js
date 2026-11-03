@@ -4,39 +4,54 @@ import { TOUR_KEY, TOUR_STEPS, tourAction, normalizeTour } from '../../shared/to
 export async function initSidebarTour() {
     const { id: windowId } = await chrome.windows.getCurrent();
     let state, latestState, baseline, frame, timer, observedTarget, lastStep;
-    let transition, transitioning = false, revision = 0;
+    let transition,
+        transitioning = false,
+        revision = 0;
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     const panel = document.createElement('section');
-    panel.id = 'sidecove-tour'; panel.hidden = true;
+    panel.id = 'sidecove-tour';
+    panel.hidden = true;
     panel.setAttribute('aria-label', 'Sidecove guided tour');
     panel.innerHTML = `<div class="coach-heading"><span id="coach-progress"></span><button id="coach-skip" type="button">Skip tour</button></div>
         <div id="coach-content" aria-live="polite"><h2 id="coach-title"></h2><p id="coach-copy"></p><p id="coach-feedback" role="status"></p></div>
         <button id="coach-retry" type="button" hidden>Add practice tab</button><div class="coach-navigation"><button id="coach-back" type="button">Back</button><button id="coach-next" type="button">Next tip</button></div>`;
-    const ring = document.createElement('div'); ring.id = 'sidecove-tour-ring'; ring.hidden = true; ring.setAttribute('aria-hidden', 'true');
+    const ring = document.createElement('div');
+    ring.id = 'sidecove-tour-ring';
+    ring.hidden = true;
+    ring.setAttribute('aria-hidden', 'true');
     document.getElementById('sidebar-container').append(ring);
     document.querySelector('.new-tab-btn-container').before(panel);
     const el = id => document.getElementById(id);
-    const activeSpace = () => [...document.querySelectorAll('#spacesList > .space')].find(space => space.style.display !== 'none');
-    const measure = () => ({ spaceId: activeSpace()?.dataset.spaceId, color: activeSpace()?.querySelector('.space-color-select')?.value, spaces: document.querySelectorAll('#spacesList > .space').length,
+    const activeSpace = () =>
+        [...document.querySelectorAll('#spacesList > .space')].find(space => space.style.display !== 'none');
+    const measure = () => ({
+        spaceId: activeSpace()?.dataset.spaceId,
+        color: activeSpace()?.querySelector('.space-color-select')?.value,
+        spaces: document.querySelectorAll('#spacesList > .space').length,
         pins: document.querySelectorAll('.pinned-tabs .tab').length,
         folders: document.querySelectorAll('#spacesList .folder').length,
-        favorites: document.querySelectorAll('#pinnedFavicons .pinned-favicon').length });
+        favorites: document.querySelectorAll('#pinnedFavicons .pinned-favicon').length
+    });
     const active = () => state?.status === 'active' && state.windowId === windowId;
     function locate() {
         if (!active()) return null;
         const step = TOUR_STEPS[state.step];
         if (!step.target) return null;
-        if (step.id === 'spaces' && document.getElementById('addSpaceInputContainer').classList.contains('visible')) return document.getElementById('addSpaceInputContainer');
+        if (step.id === 'spaces' && document.getElementById('addSpaceInputContainer').classList.contains('visible'))
+            return document.getElementById('addSpaceInputContainer');
         if (step.id === 'pins') {
             const pins = activeSpace()?.querySelector('.pinned-tabs');
             const collapsed = !pins?.getBoundingClientRect().height;
-            el('coach-copy').textContent = collapsed ? `Expand the pinned section with the highlighted arrow. ${step.tip}` : step.tip;
+            el('coach-copy').textContent = collapsed
+                ? `Expand the pinned section with the highlighted arrow. ${step.tip}`
+                : step.tip;
             if (collapsed) return activeSpace()?.querySelector('.space-toggle-chevron');
         }
         if (step.id === 'folders') {
             const folder = activeSpace()?.querySelector('.folder');
             if (folder) {
-                el('coach-copy').textContent = 'Drag “Practice: file this tab” into the highlighted folder. Click the folder to expand it if needed.';
+                el('coach-copy').textContent =
+                    'Drag “Practice: file this tab” into the highlighted folder. Click the folder to expand it if needed.';
                 return folder;
             }
             el('coach-copy').textContent = step.tip;
@@ -66,37 +81,54 @@ export async function initSidebarTour() {
         const rect = target?.getBoundingClientRect();
         ring.hidden = !rect || rect.height === 0;
         if (!ring.hidden) {
-            const top = Math.max(3, rect.top - 3), bottom = Math.min(innerHeight - 3, rect.bottom + 3);
-            Object.assign(ring.style, { top: `${top}px`, left: `${Math.max(3, rect.left - 3)}px`, width: `${Math.min(innerWidth - 6, rect.width + 6)}px`, height: `${Math.max(0, bottom - top)}px` });
+            const top = Math.max(3, rect.top - 3),
+                bottom = Math.min(innerHeight - 3, rect.bottom + 3);
+            Object.assign(ring.style, {
+                top: `${top}px`,
+                left: `${Math.max(3, rect.left - 3)}px`,
+                width: `${Math.min(innerWidth - 6, rect.width + 6)}px`,
+                height: `${Math.max(0, bottom - top)}px`
+            });
         }
     }
 
-    function schedule() { if (!frame && active() && !transitioning) frame = requestAnimationFrame(position); }
+    function schedule() {
+        if (!frame && active() && !transitioning) frame = requestAnimationFrame(position);
+    }
     const resizeObserver = new ResizeObserver(schedule);
     resizeObserver.observe(panel);
     async function render(next) {
         latestState = normalizeTour(next);
         const key = `${latestState?.runId}:${latestState?.step}:${latestState?.status}`;
         if (key === lastStep) {
-            if (!transitioning) { state = latestState; checkProgress(); schedule(); }
+            if (!transitioning) {
+                state = latestState;
+                checkProgress();
+                schedule();
+            }
             return;
         }
         lastStep = key;
         const token = ++revision;
         const focusedControl = panel.contains(document.activeElement) ? document.activeElement.id : null;
-        clearTimeout(timer); timer = null;
+        clearTimeout(timer);
+        timer = null;
         transition?.cancel();
         const nextActive = latestState?.status === 'active' && latestState.windowId === windowId;
-        const animate = active() && nextActive && state.step !== latestState.step && !reducedMotion.matches && !document.hidden;
+        const animate =
+            active() && nextActive && state.step !== latestState.step && !reducedMotion.matches && !document.hidden;
         transitioning = true;
         el('coach-back').disabled = el('coach-next').disabled = true;
         ring.hidden = true;
         const content = el('coach-content');
         if (animate) {
-            transition = content.animate([
-                { opacity: 1, transform: 'translateX(0)' },
-                { opacity: 0, transform: 'translateX(-22px)' }
-            ], { duration: 150, easing: 'ease-in', fill: 'forwards' });
+            transition = content.animate(
+                [
+                    { opacity: 1, transform: 'translateX(0)' },
+                    { opacity: 0, transform: 'translateX(-22px)' }
+                ],
+                { duration: 150, easing: 'ease-in', fill: 'forwards' }
+            );
             await transition.finished.catch(() => {});
             if (token !== revision) return;
         }
@@ -104,7 +136,10 @@ export async function initSidebarTour() {
         state = latestState;
         panel.hidden = !active();
         document.getElementById('sidebar-container').dataset.tourStep = active() ? TOUR_STEPS[state.step].id : '';
-        if (!active()) { transitioning = false; return; }
+        if (!active()) {
+            transitioning = false;
+            return;
+        }
         const step = TOUR_STEPS[state.step];
         baseline = measure();
         el('coach-progress').textContent = `${state.step + 1} of ${TOUR_STEPS.length}`;
@@ -116,10 +151,13 @@ export async function initSidebarTour() {
         // Resolve contextual copy before fading in, then keep it stable during motion.
         locate();
         if (animate && !reducedMotion.matches && !document.hidden) {
-            transition = content.animate([
-                { opacity: 0, transform: 'translateX(22px)' },
-                { opacity: 1, transform: 'translateX(0)' }
-            ], { duration: 210, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+            transition = content.animate(
+                [
+                    { opacity: 0, transform: 'translateX(22px)' },
+                    { opacity: 1, transform: 'translateX(0)' }
+                ],
+                { duration: 210, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' }
+            );
             await transition.finished.catch(() => {});
             if (token !== revision) return;
             transition.cancel();
@@ -128,7 +166,8 @@ export async function initSidebarTour() {
         transitioning = false;
         el('coach-back').disabled = state.step === 0;
         el('coach-next').disabled = false;
-        if (focusedControl && document.activeElement === document.body && !el(focusedControl)?.disabled) el(focusedControl)?.focus();
+        if (focusedControl && document.activeElement === document.body && !el(focusedControl)?.disabled)
+            el(focusedControl)?.focus();
         schedule();
         prepareTab();
     }
@@ -147,8 +186,11 @@ export async function initSidebarTour() {
     }
     el('coach-retry').onclick = prepareTab;
     async function send(action) {
-        try { await tourAction({ runId: state.runId, step: state.step, ...action }); }
-        catch { el('coach-feedback').textContent = 'Couldn’t save progress. Try again.'; }
+        try {
+            await tourAction({ runId: state.runId, step: state.step, ...action });
+        } catch {
+            el('coach-feedback').textContent = 'Couldn’t save progress. Try again.';
+        }
     }
     function achieved(message) {
         if (!active() || transitioning || timer) return;
@@ -165,13 +207,18 @@ export async function initSidebarTour() {
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape' && active()) send({ action: 'stop' });
     });
-    document.addEventListener('click', event => {
-        if (!active() || panel.contains(event.target)) return;
-        const id = TOUR_STEPS[state.step].id;
-        if (id === 'archive' && event.target.closest('.sidebar-button')) achieved('Your archive is right here.');
-        if (id === 'settings' && event.target.closest('.settings-btn')) achieved('Settings opened. Make yourself at home.');
-        schedule();
-    }, true);
+    document.addEventListener(
+        'click',
+        event => {
+            if (!active() || panel.contains(event.target)) return;
+            const id = TOUR_STEPS[state.step].id;
+            if (id === 'archive' && event.target.closest('.sidebar-button')) achieved('Your archive is right here.');
+            if (id === 'settings' && event.target.closest('.settings-btn'))
+                achieved('Settings opened. Make yourself at home.');
+            schedule();
+        },
+        true
+    );
     function checkProgress() {
         if (!active() || transitioning || !baseline) return;
         const id = TOUR_STEPS[state.step].id;
@@ -180,14 +227,20 @@ export async function initSidebarTour() {
         if (id === 'spaces' && measure().spaces > baseline.spaces) achieved('Space created. Let’s make it yours.');
         if (id === 'pins' && tab?.closest('.pinned-tabs')) achieved('Pinned. This bookmark will stay.');
         if (id === 'folders' && tab?.closest('.folder')) achieved('Filed away. Click the folder to collapse it.');
-        if (id === 'favorites' && tabId && document.querySelector(`#pinnedFavicons [data-tab-id="${tabId}"]`)) achieved('Added to Favorites. Available in every space.');
+        if (id === 'favorites' && tabId && document.querySelector(`#pinnedFavicons [data-tab-id="${tabId}"]`))
+            achieved('Added to Favorites. Available in every space.');
     }
     const observer = new MutationObserver(records => {
         if (!active() || records.every(record => panel.contains(record.target) || record.target === ring)) return;
         checkProgress();
         schedule();
     });
-    observer.observe(document.getElementById('sidebar-container'), { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
+    observer.observe(document.getElementById('sidebar-container'), {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'style']
+    });
     window.addEventListener('resize', schedule);
     document.addEventListener('scroll', schedule, true);
     document.addEventListener('pointerover', schedule, true);
@@ -212,5 +265,17 @@ export async function initSidebarTour() {
     updateMotion();
     chrome.storage.onChanged.addListener(onStorage);
     render((await chrome.storage.local.get(TOUR_KEY))[TOUR_KEY]);
-    window.addEventListener('pagehide', () => { ++revision; transition?.cancel(); clearTimeout(timer); cancelAnimationFrame(frame); observer.disconnect(); resizeObserver.disconnect(); chrome.storage.onChanged.removeListener(onStorage); }, { once: true });
+    window.addEventListener(
+        'pagehide',
+        () => {
+            ++revision;
+            transition?.cancel();
+            clearTimeout(timer);
+            cancelAnimationFrame(frame);
+            observer.disconnect();
+            resizeObserver.disconnect();
+            chrome.storage.onChanged.removeListener(onStorage);
+        },
+        { once: true }
+    );
 }

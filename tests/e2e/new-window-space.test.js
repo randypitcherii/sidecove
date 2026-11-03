@@ -7,7 +7,10 @@ let browser, page, server, base;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 beforeAll(async () => {
-    server = createServer((req, res) => { res.setHeader('Content-Type', 'text/html'); res.end(`<title>${req.url}</title>`); });
+    server = createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/html');
+        res.end(`<title>${req.url}</title>`);
+    });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     base = `http://127.0.0.1:${server.address().port}`;
     const result = await launchBrowserWithExtension();
@@ -28,9 +31,14 @@ afterAll(async () => {
 test('a link that opens in a new window lands in the space last in use, not the first one', async () => {
     await page.bringToFront();
     await page.$eval('#addSpaceBtn', b => b.click());
-    await page.$eval('#newSpaceName', el => { el.value = 'Work'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+    await page.$eval('#newSpaceName', el => {
+        el.value = 'Work';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
     await page.$eval('#createSpaceBtn', b => b.click());
-    await page.waitForFunction(() => document.querySelector('.space.active .space-name')?.value === 'Work', { polling: 100 });
+    await page.waitForFunction(() => document.querySelector('.space.active .space-name')?.value === 'Work', {
+        polling: 100
+    });
     await sleep(500);
     // Chrome opens a link from another app in a new window when none is open; that window
     // has no space of its own yet.

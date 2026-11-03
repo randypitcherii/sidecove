@@ -4,10 +4,17 @@ import { saveFolderCollapsed, loadFolderCollapsed } from '../../../src/sidebar/f
 
 test('folder states survive a fresh reader, remain independent, and rapid toggles keep the latest value', async () => {
     const data = {};
-    globalThis.chrome = { storage: { local: {
-        get: async key => ({ [key]: data[key] }),
-        set: async patch => { await new Promise(resolve => setImmediate(resolve)); Object.assign(data, patch); }
-    } } };
+    globalThis.chrome = {
+        storage: {
+            local: {
+                get: async key => ({ [key]: data[key] }),
+                set: async patch => {
+                    await new Promise(resolve => setImmediate(resolve));
+                    Object.assign(data, patch);
+                }
+            }
+        }
+    };
     assert.equal(await loadFolderCollapsed('existing'), true);
     await Promise.all([
         saveFolderCollapsed('parent', false),

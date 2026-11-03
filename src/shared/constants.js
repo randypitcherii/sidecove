@@ -69,21 +69,21 @@ export const CSS_CLASSES = {
     CONTEXT_MENU_ITEM: 'context-menu-item',
     CONTEXT_MENU_SEPARATOR: 'context-menu-separator',
     WITH_SUBMENU: 'with-submenu',
-    SUBMENU: 'submenu',
+    SUBMENU: 'submenu'
 };
 
 // DOM selectors for querying elements
 export const SELECTORS = {
     // Tab selectors
-    TAB_BY_ID: (tabId) => `[data-tab-id="${tabId}"]`,
-    TAB_BY_URL: (url) => `[data-url="${CSS.escape(url)}"]`,
+    TAB_BY_ID: tabId => `[data-tab-id="${tabId}"]`,
+    TAB_BY_URL: url => `[data-url="${CSS.escape(url)}"]`,
     ALL_TABS: '.tab',
     ACTIVE_TABS: '.tab.active',
     BOOKMARK_ONLY_TABS: '.tab.bookmark-only',
     DRAGGABLE_TABS: '.tab:not(.dragging), .folder:not(.dragging)',
 
     // Space selectors
-    SPACE_BY_ID: (spaceId) => `[data-space-id="${spaceId}"]`,
+    SPACE_BY_ID: spaceId => `[data-space-id="${spaceId}"]`,
     ALL_SPACES: '.space',
 
     // Container selectors
@@ -127,7 +127,7 @@ export const SELECTORS = {
     PINNED_PLACEHOLDER: '.pinned-placeholder-container',
 
     // Drop indicator selectors
-    DROP_INDICATORS: '.drop-indicator-vertical, .drop-line.visible',
+    DROP_INDICATORS: '.drop-indicator-vertical, .drop-line.visible'
 };
 
 // Timing constants (in milliseconds unless noted)
@@ -144,7 +144,7 @@ export const TIMING = {
     DEBOUNCE_UI_REFRESH: 100,
 
     // Drag operation timing
-    DRAG_CLASS_DELAY: 0, // setTimeout(fn, 0) for class addition
+    DRAG_CLASS_DELAY: 0 // setTimeout(fn, 0) for class addition
 };
 
 // Mouse button constants
@@ -153,13 +153,13 @@ export const MOUSE_BUTTON = {
     MIDDLE: 1,
     RIGHT: 2,
     BACK: 3,
-    FORWARD: 4,
+    FORWARD: 4
 };
 
 // Tab type constants
 export const TAB_TYPE = {
     PINNED: 'pinned',
-    TEMPORARY: 'temporary',
+    TEMPORARY: 'temporary'
 };
 
 // Drop position constants
@@ -167,11 +167,11 @@ export const DROP_POSITION = {
     ABOVE: 'above',
     BELOW: 'below',
     LEFT: 'left',
-    RIGHT: 'right',
+    RIGHT: 'right'
 };
 
 // Axis constants for drag operations
 export const AXIS = {
     X: 'x',
-    Y: 'y',
+    Y: 'y'
 };

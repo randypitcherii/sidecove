@@ -1,10 +1,10 @@
 /**
  * LocalStorage - Bookmark-based persistence and Chrome storage utilities
- * 
+ *
  * Purpose: Manages space bookmarks and provides legacy storage compatibility
  * Key Functions: Sidecove bookmark folder management, space bookmark operations, storage synchronization
  * Architecture: Static utility object for bookmark-based data persistence
- * 
+ *
  * Critical Notes:
  * - Creates and manages the root ("Sidecove") bookmark folder for space persistence
  * - Provides bookmark-based storage as alternative to chrome.storage
@@ -21,7 +21,10 @@ const LocalStorage = {
     _registryChain: Promise.resolve(),
     _serializeRegistryOp: function (op) {
         const run = this._registryChain.then(op, op);
-        this._registryChain = run.then(() => { }, () => { });
+        this._registryChain = run.then(
+            () => {},
+            () => {}
+        );
         return run;
     },
     getSpaceRegistry: async function () {
@@ -39,15 +42,16 @@ const LocalStorage = {
             const registry = await this.getSpaceRegistry();
             let entry = registry[bookmarkFolderId];
             if (!entry) {
-                const spaceUuid = (typeof crypto !== 'undefined' && crypto.randomUUID)
-                    ? crypto.randomUUID()
-                    : `space-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                const spaceUuid =
+                    typeof crypto !== 'undefined' && crypto.randomUUID
+                        ? crypto.randomUUID()
+                        : `space-${Date.now()}-${Math.random().toString(36).slice(2)}`;
                 entry = {
                     spaceUuid,
                     bookmarkFolderId,
                     name: attrs.name ?? null,
                     color: attrs.color ?? null,
-                    order: attrs.order ?? 0,
+                    order: attrs.order ?? 0
                 };
                 registry[bookmarkFolderId] = entry;
                 await this.saveSpaceRegistry(registry);
@@ -91,7 +95,7 @@ const LocalStorage = {
     getOrCreateSpaceFolder: async function (spaceName) {
         const sidecoveFolder = await this.getOrCreateSidecoveFolder();
         const children = await chrome.bookmarks.getChildren(sidecoveFolder.id);
-        let spaceFolder = children.find((f) => !f.url && f.title === spaceName);
+        let spaceFolder = children.find(f => !f.url && f.title === spaceName);
 
         if (!spaceFolder) {
             spaceFolder = await chrome.bookmarks.create({
@@ -128,6 +132,6 @@ const LocalStorage = {
         // Return sorted array of unique space names
         return Array.from(spaceNames).sort();
     }
-}
+};
 
 export { LocalStorage };

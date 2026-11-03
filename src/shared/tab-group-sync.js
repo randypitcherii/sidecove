@@ -9,7 +9,9 @@ export async function syncSpaceGroups(spaces, activeSpaces = {}) {
     const byId = new Map(tabs.map(t => [t.id, t]));
     const next = {};
     for (const space of spaces) {
-        const members = [...space.spaceBookmarks, ...space.temporaryTabs].map(id => byId.get(id)).filter(t => t && !t.pinned);
+        const members = [...space.spaceBookmarks, ...space.temporaryTabs]
+            .map(id => byId.get(id))
+            .filter(t => t && !t.pinned);
         const windows = [...new Set(members.map(t => t.windowId))];
         for (const windowId of windows) {
             // Recheck between spaces so disabling the setting stops a long projection.
@@ -21,11 +23,19 @@ export async function syncSpaceGroups(spaces, activeSpaces = {}) {
             const liveGroup = groups.find(g => g.id === groupId && g.windowId === windowId);
             if (!liveGroup) groupId = undefined;
             if (groupId === undefined || ordered.some(t => t.groupId !== groupId)) {
-                groupId = await chrome.tabs.group({ tabIds: ids, ...(groupId === undefined ? { createProperties: { windowId } } : { groupId }) });
+                groupId = await chrome.tabs.group({
+                    tabIds: ids,
+                    ...(groupId === undefined ? { createProperties: { windowId } } : { groupId })
+                });
             }
             next[key] = groupId;
             const collapsed = Boolean(activeSpaces[windowId] && activeSpaces[windowId] !== space.id);
-            if (!liveGroup || liveGroup.title !== space.name || liveGroup.color !== space.color || liveGroup.collapsed !== collapsed) {
+            if (
+                !liveGroup ||
+                liveGroup.title !== space.name ||
+                liveGroup.color !== space.color ||
+                liveGroup.collapsed !== collapsed
+            ) {
                 await chrome.tabGroups.update(groupId, { title: space.name, color: space.color, collapsed });
             }
             const current = await chrome.tabs.query({ groupId });

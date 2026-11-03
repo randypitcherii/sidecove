@@ -1,10 +1,10 @@
 /**
  * Logger - Centralized logging utility with debug flag support
- * 
+ *
  * Purpose: Provides controlled logging that respects the debugLoggingEnabled setting
  * Key Functions: log(), error(), warn(), info(), debug() - all check cached debug setting
  * Architecture: Singleton pattern with cached setting value and storage change listener
- * 
+ *
  * Critical Notes:
  * - Caches debugLoggingEnabled setting to avoid storage reads on every log call
  * - Listens for storage changes to update cache automatically
@@ -25,20 +25,20 @@ let initializationPromise = null;
 async function initializeLogger() {
     if (isInitialized) return;
     if (initializationPromise) return initializationPromise;
-    
+
     initializationPromise = (async () => {
         try {
             // Load the setting from storage
             const result = await chrome.storage.sync.get({ debugLoggingEnabled: false });
             debugLoggingEnabled = result.debugLoggingEnabled || false;
-            
+
             // Listen for storage changes to update cache
             chrome.storage.onChanged.addListener((changes, areaName) => {
                 if (areaName === 'sync' && changes.debugLoggingEnabled) {
                     debugLoggingEnabled = changes.debugLoggingEnabled.newValue || false;
                 }
             });
-            
+
             isInitialized = true;
         } catch (error) {
             // If we can't access storage, default to disabled
@@ -47,7 +47,7 @@ async function initializeLogger() {
             isInitialized = true;
         }
     })();
-    
+
     return initializationPromise;
 }
 
@@ -60,14 +60,14 @@ function shouldLog() {
     if (isInitialized) {
         return debugLoggingEnabled;
     }
-    
+
     // If not initialized and chrome.storage is available, trigger immediate check
     // This handles the race condition where Logger methods are called before init completes
     if (typeof chrome !== 'undefined' && chrome.storage && !initializationPromise) {
         // Start initialization if not already started
         initializeLogger();
     }
-    
+
     // During race condition window, default to false (respects user's setting preference)
     // The async check will update the cache for future calls
     return false;
@@ -81,49 +81,49 @@ const Logger = {
     /**
      * Log a message (only if debug logging is enabled)
      */
-    log: function(...args) {
+    log: function (...args) {
         if (shouldLog()) {
             console.log(...args);
         }
     },
-    
+
     /**
      * Log an error (only if debug logging is enabled)
      * Note: Errors are critical but we respect the debug flag to avoid console spam
      */
-    error: function(...args) {
+    error: function (...args) {
         if (shouldLog()) {
             console.error(...args);
         }
     },
-    
+
     /**
      * Log a warning (only if debug logging is enabled)
      */
-    warn: function(...args) {
+    warn: function (...args) {
         if (shouldLog()) {
             console.warn(...args);
         }
     },
-    
+
     /**
      * Log an info message (only if debug logging is enabled)
      */
-    info: function(...args) {
+    info: function (...args) {
         if (shouldLog()) {
             console.info(...args);
         }
     },
-    
+
     /**
      * Log a debug message (only if debug logging is enabled)
      */
-    debug: function(...args) {
+    debug: function (...args) {
         if (shouldLog()) {
             console.debug(...args);
         }
     },
-    
+
     /**
      * Initialize the logger (call this early in extension lifecycle)
      */
@@ -136,4 +136,3 @@ if (typeof chrome !== 'undefined' && chrome.storage) {
 }
 
 export { Logger };
-

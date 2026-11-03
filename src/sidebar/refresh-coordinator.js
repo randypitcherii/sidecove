@@ -1,7 +1,15 @@
 export class RefreshCoordinator {
-    constructor({ readSpaces, adoptSpaces, render, isBusy = () => false, onError = () => {}, delay = 100, maxRetries = 3,
+    constructor({
+        readSpaces,
+        adoptSpaces,
+        render,
+        isBusy = () => false,
+        onError = () => {},
+        delay = 100,
+        maxRetries = 3,
         schedule = (callback, timeout) => globalThis.setTimeout(callback, timeout),
-        cancel = timer => globalThis.clearTimeout(timer) }) {
+        cancel = timer => globalThis.clearTimeout(timer)
+    }) {
         this.readSpaces = readSpaces;
         this.adoptSpaces = adoptSpaces;
         this.render = render;
@@ -70,7 +78,7 @@ export class RefreshCoordinator {
             failed = true;
             this.onError(error);
             if (this.retryCount < this.maxRetries) {
-                const retryDelay = this.delay * (2 ** this.retryCount);
+                const retryDelay = this.delay * 2 ** this.retryCount;
                 this.retryCount++;
                 this.schedule(retryDelay);
             }

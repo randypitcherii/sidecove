@@ -10,19 +10,42 @@ import { getSpaceBookmarkFolder } from '../../../src/sidebar/space-bookmarks.js'
 // Only the exact Sidecove title is ever adopted, whatever the other folder is called.
 function mock({ sidecove = false } = {}) {
     const nodes = [
-        { id: '0', title: '' }, { id: '2', parentId: '0', title: 'Other bookmarks' },
-        { id: 'upstream', parentId: '2', title: 'Upstream' }, { id: 'upstream-space', parentId: 'upstream', title: 'Work' }
+        { id: '0', title: '' },
+        { id: '2', parentId: '0', title: 'Other bookmarks' },
+        { id: 'upstream', parentId: '2', title: 'Upstream' },
+        { id: 'upstream-space', parentId: 'upstream', title: 'Work' }
     ];
-    if (sidecove) nodes.push({ id: 'sidecove', parentId: '2', title: 'Sidecove' }, { id: 'sidecove-space', parentId: 'sidecove', title: 'Home' });
+    if (sidecove)
+        nodes.push(
+            { id: 'sidecove', parentId: '2', title: 'Sidecove' },
+            { id: 'sidecove-space', parentId: 'sidecove', title: 'Home' }
+        );
     const writes = [];
-    globalThis.chrome = { bookmarks: {
-        async search({ title }) { return nodes.filter(node => node.title === title); },
-        async get(id) { return nodes.filter(node => node.id === id); },
-        async getChildren(id) { return nodes.filter(node => node.parentId === id); },
-        async create(details) { writes.push(['create', details]); const node = { id: 'created', parentId: '2', ...details }; nodes.push(node); return node; },
-        async update(id, changes) { writes.push(['update', id, changes]); },
-        async move(id, destination) { writes.push(['move', id, destination]); }
-    } };
+    globalThis.chrome = {
+        bookmarks: {
+            async search({ title }) {
+                return nodes.filter(node => node.title === title);
+            },
+            async get(id) {
+                return nodes.filter(node => node.id === id);
+            },
+            async getChildren(id) {
+                return nodes.filter(node => node.parentId === id);
+            },
+            async create(details) {
+                writes.push(['create', details]);
+                const node = { id: 'created', parentId: '2', ...details };
+                nodes.push(node);
+                return node;
+            },
+            async update(id, changes) {
+                writes.push(['update', id, changes]);
+            },
+            async move(id, destination) {
+                writes.push(['move', id, destination]);
+            }
+        }
+    };
     return { writes };
 }
 

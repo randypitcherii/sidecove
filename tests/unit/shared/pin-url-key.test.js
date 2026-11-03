@@ -3,10 +3,16 @@ import assert from 'node:assert/strict';
 import { Utils, refreshPinMatchFullQueryHosts, normalizePinMatchHost } from '../../../src/shared/utils.js';
 
 function mockStorage(hosts) {
-    globalThis.chrome = { storage: {
-        sync: { async get() { return { pinMatchFullQueryHosts: hosts }; } },
-        onChanged: { addListener() {} },
-    } };
+    globalThis.chrome = {
+        storage: {
+            sync: {
+                async get() {
+                    return { pinMatchFullQueryHosts: hosts };
+                }
+            },
+            onChanged: { addListener() {} }
+        }
+    };
     return refreshPinMatchFullQueryHosts();
 }
 
@@ -18,8 +24,14 @@ test('pinned URL keys ignore query strings by default', async () => {
 
 test('hosts in the keep-query-string list match per query string', async () => {
     await mockStorage(['localhost:6969']);
-    assert.equal(Utils.getPinnedUrlKey('http://localhost:6969/?focused=node-1'), 'http://localhost:6969/?focused=node-1');
-    assert.equal(Utils.getPinnedUrlKey('http://localhost:6969/?focused=node-2'), 'http://localhost:6969/?focused=node-2');
+    assert.equal(
+        Utils.getPinnedUrlKey('http://localhost:6969/?focused=node-1'),
+        'http://localhost:6969/?focused=node-1'
+    );
+    assert.equal(
+        Utils.getPinnedUrlKey('http://localhost:6969/?focused=node-2'),
+        'http://localhost:6969/?focused=node-2'
+    );
     // Other hosts keep the stock behavior.
     assert.equal(Utils.getPinnedUrlKey('https://example.com/read?x=1'), 'https://example.com/read');
 });
@@ -55,7 +67,10 @@ test('entries that do not parse as a host are dropped', () => {
 
 test('pasted URLs, trailing slashes and default ports still match', async () => {
     await mockStorage(['http://localhost:6969/']);
-    assert.equal(Utils.getPinnedUrlKey('http://localhost:6969/?focused=node-1'), 'http://localhost:6969/?focused=node-1');
+    assert.equal(
+        Utils.getPinnedUrlKey('http://localhost:6969/?focused=node-1'),
+        'http://localhost:6969/?focused=node-1'
+    );
 
     await mockStorage(['example.com/']);
     assert.equal(Utils.getPinnedUrlKey('https://example.com/read?x=1'), 'https://example.com/read?x=1');

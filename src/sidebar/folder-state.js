@@ -5,9 +5,7 @@ const keyFor = folderId => `folderCollapsed:${folderId}`;
 export function saveFolderCollapsed(folderId, collapsed) {
     if (!folderId) return Promise.resolve();
     const previous = pendingWrites.get(folderId) || Promise.resolve();
-    const write = previous.catch(() => {}).then(() =>
-        chrome.storage.local.set({ [keyFor(folderId)]: collapsed })
-    );
+    const write = previous.catch(() => {}).then(() => chrome.storage.local.set({ [keyFor(folderId)]: collapsed }));
     pendingWrites.set(folderId, write);
     return write.finally(() => {
         if (pendingWrites.get(folderId) === write) pendingWrites.delete(folderId);

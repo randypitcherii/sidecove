@@ -19,7 +19,9 @@ export class EditSessionRegistry {
     complete(session, operation = async () => {}) {
         if (!session) return Promise.resolve();
         if (session.completion) return session.completion;
-        session.completion = Promise.resolve().then(() => session.disposed ? undefined : operation()).finally(() => this.#release(session));
+        session.completion = Promise.resolve()
+            .then(() => (session.disposed ? undefined : operation()))
+            .finally(() => this.#release(session));
         return session.completion;
     }
 

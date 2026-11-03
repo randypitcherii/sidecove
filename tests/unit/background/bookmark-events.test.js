@@ -1,17 +1,35 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const event = () => ({ listeners: [], addListener(fn) { this.listeners.push(fn); }, emit(...args) { return Promise.all(this.listeners.map(fn => fn(...args))); } });
+const event = () => ({
+    listeners: [],
+    addListener(fn) {
+        this.listeners.push(fn);
+    },
+    emit(...args) {
+        return Promise.all(this.listeners.map(fn => fn(...args)));
+    }
+});
 
 test('bookmark listeners ignore unrelated edits and coalesce Sidecove subtree changes', async () => {
-    const events = { onCreated: event(), onRemoved: event(), onMoved: event(), onChanged: event(), onChildrenReordered: event(), onImportBegan: event(), onImportEnded: event() };
+    const events = {
+        onCreated: event(),
+        onRemoved: event(),
+        onMoved: event(),
+        onChanged: event(),
+        onChildrenReordered: event(),
+        onImportBegan: event(),
+        onImportEnded: event()
+    };
     const nodes = {
-        root: { id: 'root', title: 'Sidecove' }, space: { id: 'space', parentId: 'root' }, favorite: { id: 'favorite', parentId: 'space', url: 'https://one.test/' },
+        root: { id: 'root', title: 'Sidecove' },
+        space: { id: 'space', parentId: 'root' },
+        favorite: { id: 'favorite', parentId: 'space', url: 'https://one.test/' },
         other: { id: 'other', parentId: 'outside' }
     };
     const messages = [];
     globalThis.chrome = {
-        bookmarks: { ...events, search: async () => [nodes.root], get: async id => nodes[id] ? [nodes[id]] : [] },
+        bookmarks: { ...events, search: async () => [nodes.root], get: async id => (nodes[id] ? [nodes[id]] : []) },
         runtime: { sendMessage: async message => messages.push(message) }
     };
     const { registerBookmarkListeners } = await import(`../../../src/background/bookmark-events.js?test=${Date.now()}`);

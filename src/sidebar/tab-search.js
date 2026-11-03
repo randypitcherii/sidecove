@@ -5,7 +5,11 @@
  * is sent anywhere. Every word of the query must appear in the title or URL.
  */
 
-const fold = text => String(text || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const fold = text =>
+    String(text || '')
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .toLowerCase();
 
 function wordScore(word, title, url) {
     if (title.startsWith(word)) return 4;
@@ -30,10 +34,12 @@ export function searchEntries(query, entries, { currentSpaceId = null, limit = 2
         }
         scored.push({ entry, score, index });
     });
-    scored.sort((a, b) =>
-        b.score - a.score
-        || (b.entry.spaceId === currentSpaceId) - (a.entry.spaceId === currentSpaceId)
-        || (a.entry.kind === 'favorite') - (b.entry.kind === 'favorite')
-        || a.index - b.index);
+    scored.sort(
+        (a, b) =>
+            b.score - a.score ||
+            (b.entry.spaceId === currentSpaceId) - (a.entry.spaceId === currentSpaceId) ||
+            (a.entry.kind === 'favorite') - (b.entry.kind === 'favorite') ||
+            a.index - b.index
+    );
     return scored.slice(0, limit).map(item => item.entry);
 }

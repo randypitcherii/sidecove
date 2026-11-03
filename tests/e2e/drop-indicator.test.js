@@ -6,7 +6,8 @@ import { launchBrowserWithExtension, openSidebar } from './helpers/extension-hel
 let browser, extensionId, page, space;
 let ids = {};
 
-const storedSpaces = () => page.evaluate(async () => (await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'get' })).spaces);
+const storedSpaces = () =>
+    page.evaluate(async () => (await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'get' })).spaces);
 const row = title => `.space.active [data-tab-type="pinned"] .tab[data-bookmark-id="${ids[title]}"]`;
 const folder = title => `.space.active .folder[data-bookmark-id="${ids[title]}"]`;
 const titleOf = id => Object.keys(ids).find(title => ids[title] === id);
@@ -18,9 +19,16 @@ async function seedFavorites() {
         const ids = {};
         for (const child of await chrome.bookmarks.getChildren(parentId)) await chrome.bookmarks.removeTree(child.id);
         const add = async (parent, title) => {
-            ids[title] = (await chrome.bookmarks.create({ parentId: parent, title, url: `https://example.com/${title.replace(' ', '-')}` })).id;
+            ids[title] = (
+                await chrome.bookmarks.create({
+                    parentId: parent,
+                    title,
+                    url: `https://example.com/${title.replace(' ', '-')}`
+                })
+            ).id;
         };
-        const addFolder = async (parent, title) => (ids[title] = (await chrome.bookmarks.create({ parentId: parent, title })).id);
+        const addFolder = async (parent, title) =>
+            (ids[title] = (await chrome.bookmarks.create({ parentId: parent, title })).id);
         await add(parentId, 'Top one');
         const outer = await addFolder(parentId, 'Outer');
         await add(outer, 'Inner one');
@@ -35,60 +43,75 @@ async function seedFavorites() {
         return ids;
     }, space.bookmarkFolderId);
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => document.querySelector('.space.active .space-name')?.value === 'Drops', { polling: 100 });
+    await page.waitForFunction(() => document.querySelector('.space.active .space-name')?.value === 'Drops', {
+        polling: 100
+    });
     for (const title of ['Top one', 'Inner two', 'Deep one', 'Top three']) await page.waitForSelector(row(title));
     await page.waitForSelector(`${folder('Shut')}.collapsed`);
 }
 
 // Start dragging a row and hover a point on another element, given as fractions of its box.
 async function hover(sourceSelector, targetSelector, { x = 0.5, y = 0.5 } = {}) {
-    return page.evaluate(({ sourceSelector, targetSelector, x, y }) => {
-        const source = document.querySelector(sourceSelector);
-        const target = document.querySelector(targetSelector);
-        if (!source || !target) throw new Error(`missing ${!source ? sourceSelector : targetSelector}`);
-        const r = target.getBoundingClientRect();
-        const point = { clientX: r.left + r.width * x, clientY: r.top + r.height * y };
-        const dataTransfer = new DataTransfer();
-        window.__drag = { source, dataTransfer, point };
-        const grip = source.classList.contains('folder') ? source.querySelector(':scope > .folder-header') : source;
-        grip.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer }));
-        document.elementFromPoint(point.clientX, point.clientY)
-            .dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer, ...point }));
-        return point;
-    }, { sourceSelector, targetSelector, x, y });
+    return page.evaluate(
+        ({ sourceSelector, targetSelector, x, y }) => {
+            const source = document.querySelector(sourceSelector);
+            const target = document.querySelector(targetSelector);
+            if (!source || !target) throw new Error(`missing ${!source ? sourceSelector : targetSelector}`);
+            const r = target.getBoundingClientRect();
+            const point = { clientX: r.left + r.width * x, clientY: r.top + r.height * y };
+            const dataTransfer = new DataTransfer();
+            window.__drag = { source, dataTransfer, point };
+            const grip = source.classList.contains('folder') ? source.querySelector(':scope > .folder-header') : source;
+            grip.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer }));
+            document
+                .elementFromPoint(point.clientX, point.clientY)
+                .dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer, ...point }));
+            return point;
+        },
+        { sourceSelector, targetSelector, x, y }
+    );
 }
 
 // What the user sees while hovering: the visible drop lines and the highlighted folders.
-const indicator = () => page.evaluate(() => {
-    const lines = [...document.querySelectorAll('.drop-line')]
-        .filter(line => getComputedStyle(line).display !== 'none' && line.getBoundingClientRect().height > 0)
-        .map(line => {
-            const r = line.getBoundingClientRect();
-            return { left: r.left, right: r.right, y: r.top + r.height / 2 };
-        });
-    const folders = [...document.querySelectorAll('.folder.drop-target-folder')].map(f => f.dataset.bookmarkId);
-    return { lines, folders };
-}).then(({ lines, folders }) => ({ lines, folders: folders.map(titleOf) }));
+const indicator = () =>
+    page
+        .evaluate(() => {
+            const lines = [...document.querySelectorAll('.drop-line')]
+                .filter(line => getComputedStyle(line).display !== 'none' && line.getBoundingClientRect().height > 0)
+                .map(line => {
+                    const r = line.getBoundingClientRect();
+                    return { left: r.left, right: r.right, y: r.top + r.height / 2 };
+                });
+            const folders = [...document.querySelectorAll('.folder.drop-target-folder')].map(f => f.dataset.bookmarkId);
+            return { lines, folders };
+        })
+        .then(({ lines, folders }) => ({ lines, folders: folders.map(titleOf) }));
 
 async function drop() {
     await page.evaluate(() => {
         const { source, dataTransfer, point } = window.__drag;
-        document.elementFromPoint(point.clientX, point.clientY)
+        document
+            .elementFromPoint(point.clientX, point.clientY)
             .dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer, ...point }));
         const grip = source.classList.contains('folder') ? source.querySelector(':scope > .folder-header') : source;
         grip.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer }));
     });
 }
 
-const box = selector => page.$eval(selector, el => {
-    const r = el.getBoundingClientRect();
-    return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
-});
+const box = selector =>
+    page.$eval(selector, el => {
+        const r = el.getBoundingClientRect();
+        return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+    });
 
 // Wait until a bookmark folder (the space folder when no title is given) holds these titles, in order.
-const waitForChildren = (folderTitle, expected) => page.waitForFunction(async ({ id, expected }) =>
-    JSON.stringify((await chrome.bookmarks.getChildren(id)).map(c => c.title)) === JSON.stringify(expected),
-{ polling: 100, timeout: 5000 }, { id: folderTitle ? ids[folderTitle] : space.bookmarkFolderId, expected });
+const waitForChildren = (folderTitle, expected) =>
+    page.waitForFunction(
+        async ({ id, expected }) =>
+            JSON.stringify((await chrome.bookmarks.getChildren(id)).map(c => c.title)) === JSON.stringify(expected),
+        { polling: 100, timeout: 5000 },
+        { id: folderTitle ? ids[folderTitle] : space.bookmarkFolderId, expected }
+    );
 
 beforeAll(async () => {
     ({ browser, extensionId } = await launchBrowserWithExtension());
@@ -101,7 +124,10 @@ beforeAll(async () => {
         input.dispatchEvent(new Event('input', { bubbles: true }));
     });
     await page.$eval('#createSpaceBtn', button => button.click());
-    await page.waitForFunction(() => document.querySelector('#spaceSwitcher button.active')?.textContent.includes('Drops'), { polling: 100 });
+    await page.waitForFunction(
+        () => document.querySelector('#spaceSwitcher button.active')?.textContent.includes('Drops'),
+        { polling: 100 }
+    );
     space = (await storedSpaces()).find(s => s.name === 'Drops');
 });
 
@@ -199,9 +225,13 @@ describe('drop indicator', () => {
     test('a dragged selection shows the line at the end of the folder it joins', async () => {
         await page.bringToFront();
         for (const title of ['Top one', 'Top two']) {
-            await page.$eval(row(title), el => el.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, metaKey: true })));
+            await page.$eval(row(title), el =>
+                el.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, metaKey: true }))
+            );
         }
-        await page.waitForFunction(() => document.querySelectorAll('.space.active .tab.selected').length === 2, { polling: 100 });
+        await page.waitForFunction(() => document.querySelectorAll('.space.active .tab.selected').length === 2, {
+            polling: 100
+        });
         await hover(row('Top one'), row('Inner one'), { y: 0.15 });
         const { lines, folders } = await indicator();
         const nested = await box(folder('Nested'));

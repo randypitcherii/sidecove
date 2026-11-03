@@ -4,8 +4,12 @@ import { launchBrowserWithExtension } from './helpers/extension-helper.js';
 // stylesheets, fonts, scripts or images from the network.
 let browser, extensionId;
 
-beforeAll(async () => { ({ browser, extensionId } = await launchBrowserWithExtension()); });
-afterAll(async () => { await browser?.close(); });
+beforeAll(async () => {
+    ({ browser, extensionId } = await launchBrowserWithExtension());
+});
+afterAll(async () => {
+    await browser?.close();
+});
 
 async function openAndRecord(path) {
     const page = await browser.newPage();

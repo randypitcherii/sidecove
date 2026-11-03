@@ -23,7 +23,8 @@ export async function preparePractice(state, message, steps) {
     if (!PRACTICE_LESSONS.has(lesson)) return state;
     const url = practiceUrl(state.runId, lesson);
     const tabs = await chrome.tabs.query({ windowId: state.windowId });
-    const tab = tabs.find(tab => (tab.url || tab.pendingUrl) === url)
-        || await chrome.tabs.create({ windowId: state.windowId, url, active: false });
+    const tab =
+        tabs.find(tab => (tab.url || tab.pendingUrl) === url) ||
+        (await chrome.tabs.create({ windowId: state.windowId, url, active: false }));
     return { ...state, practiceTabs: { ...state.practiceTabs, [lesson]: tab.id } };
 }

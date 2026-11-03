@@ -68,15 +68,17 @@ export async function switchSpaceWithoutSidebar({ chromeApi, dispatch, windowId,
     const spaces = await dispatch({ action: 'get' });
     const [activeTab] = await chromeApi.tabs.query({ active: true, windowId });
     const { activeSpaces = {} } = await chromeApi.storage.session.get('activeSpaces');
-    const owner = activeTab && spaces.find(space =>
-        [...space.spaceBookmarks, ...space.temporaryTabs].includes(activeTab.id));
+    const owner =
+        activeTab && spaces.find(space => [...space.spaceBookmarks, ...space.temporaryTabs].includes(activeTab.id));
     const recorded = spaces.some(space => space.id === activeSpaces[windowId]) ? activeSpaces[windowId] : null;
     const currentId = recorded || owner?.id || spaces[0]?.id;
     const targetId = resolveSpaceTarget(spaces, currentId, request);
     if (!targetId) return null;
     const target = spaces.find(space => space.id === targetId);
     await dispatch({ action: 'activate', windowId, spaceId: targetId });
-    const windowTabs = new Set((await chromeApi.tabs.query({ windowId })).filter(tab => !tab.pinned).map(tab => tab.id));
+    const windowTabs = new Set(
+        (await chromeApi.tabs.query({ windowId })).filter(tab => !tab.pinned).map(tab => tab.id)
+    );
     const owned = [...target.spaceBookmarks, ...target.temporaryTabs].filter(id => windowTabs.has(id));
     const tabId = owned.includes(target.lastTab) ? target.lastTab : owned[owned.length - 1];
     if (tabId) await chromeApi.tabs.update(tabId, { active: true });

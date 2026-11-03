@@ -2,11 +2,11 @@ import { isPracticeUrl } from './tour-practice.js';
 import { getSpaceTabs, spaceRequest } from './space-client.js';
 /**
  * Utils - Shared utility functions and storage management
- * 
+ *
  * Purpose: Provides common utilities and centralized settings/storage management across the extension
  * Key Functions: Settings CRUD, archived tabs management, space data operations, default configurations
  * Architecture: Static utility class with async storage operations
- * 
+ *
  * Critical Notes:
  * - Central source of truth for extension settings and defaults
  * - Handles both chrome.storage.sync (settings) and chrome.storage.local (spaces/tabs data)
@@ -61,7 +61,6 @@ if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
 }
 
 const Utils = {
-
     async focusTab(tabId) {
         const tab = await chrome.tabs.update(tabId, { active: true });
         await chrome.windows.update(tab.windowId, { focused: true });
@@ -79,7 +78,8 @@ const Utils = {
                 if (tab) {
                     bookmarks.push(tab.id);
                     // Set tab name override with the bookmark's title
-                    if (item.title && item.title !== tab.title) { // Only override if bookmark title is present and different
+                    if (item.title && item.title !== tab.title) {
+                        // Only override if bookmark title is present and different
                         await this.setTabNameOverride(tab.id, tab.url, item.title);
                         Logger.log(`Override set for tab ${tab.id} from bookmark: ${item.title}`);
                     }
@@ -97,16 +97,17 @@ const Utils = {
     // Helper function to generate UUID (If you want to move this too)
     generateUUID: function () {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            var r = (Math.random() * 16) | 0,
+                v = c == 'x' ? r : (r & 0x3) | 0x8;
             return v.toString(16);
         });
     },
 
     // Helper function to fetch favicon
-    getFaviconUrl: function (u, size = "16") {
-        const url = new URL(chrome.runtime.getURL("/_favicon/"));
-        url.searchParams.set("pageUrl", u);
-        url.searchParams.set("size", size);
+    getFaviconUrl: function (u, size = '16') {
+        const url = new URL(chrome.runtime.getURL('/_favicon/'));
+        url.searchParams.set('pageUrl', u);
+        url.searchParams.set('size', size);
         return url.toString();
     },
 
@@ -142,10 +143,10 @@ const Utils = {
             debugLoggingEnabled: false, // Default: disabled (controls debug logging)
             showAllOpenTabsInCollapsedFolders: false, // Default: Arc behavior (only show active tab in collapsed folder)
             spaceSwitcherStyle: 'icons', // Default: Arc behavior (icons, or a dot for a space without one); 'names' shows full names
-            pinMatchFullQueryHosts: [], // Default: none (pinned URL keys ignore query strings, as before)
+            pinMatchFullQueryHosts: [] // Default: none (pinned URL keys ignore query strings, as before)
         };
         const result = await chrome.storage.sync.get(defaultSettings);
-        Logger.log("Retrieved settings:", result);
+        Logger.log('Retrieved settings:', result);
         return result;
     },
 
@@ -161,7 +162,8 @@ const Utils = {
     },
 
     // Set or update a single override using tabId
-    setTabNameOverride: async function (tabId, url, name) { // Added tabId, kept url for domain
+    setTabNameOverride: async function (tabId, url, name) {
+        // Added tabId, kept url for domain
         if (!tabId || !url || !name) return; // Basic validation
 
         const overrides = await this.getTabNameOverrides();
@@ -172,16 +174,18 @@ const Utils = {
             await this.saveTabNameOverrides(overrides);
             Logger.log(`Override set for tab ${tabId}: ${name}`);
         } catch (e) {
-            Logger.error("Error setting override - invalid URL?", url, e);
+            Logger.error('Error setting override - invalid URL?', url, e);
         }
     },
 
     // Remove an override using tabId
-    removeTabNameOverride: async function (tabId) { // Changed parameter to tabId
+    removeTabNameOverride: async function (tabId) {
+        // Changed parameter to tabId
         if (!tabId) return;
 
         const overrides = await this.getTabNameOverrides();
-        if (overrides[tabId]) { // Check using tabId
+        if (overrides[tabId]) {
+            // Check using tabId
             delete overrides[tabId]; // Delete using tabId
             await this.saveTabNameOverrides(overrides);
             Logger.log(`Override removed for tab ${tabId}`);
@@ -214,7 +218,10 @@ const Utils = {
     _serializePinnedStateOp: function (op) {
         const run = this._pinnedStateChain.then(op, op);
         // Keep the chain alive even if an op rejects, so one failure can't wedge the queue.
-        this._pinnedStateChain = run.then(() => { }, () => { });
+        this._pinnedStateChain = run.then(
+            () => {},
+            () => {}
+        );
         return run;
     },
 
@@ -283,7 +290,8 @@ const Utils = {
     },
 
     // Add a tab to the archive. Resolves true only when a new entry was stored.
-    addArchivedTab: async function (tabData) { // tabData = { url, name, spaceId, archivedAt }
+    addArchivedTab: async function (tabData) {
+        // tabData = { url, name, spaceId, archivedAt }
         if (!tabData || !tabData.url || !tabData.name || !tabData.spaceId) return false;
 
         const archivedTabs = await this.getArchivedTabs();
@@ -329,7 +337,6 @@ const Utils = {
             await this.addArchivedTab(tabData);
             await chrome.tabs.remove(tabId); // Close the original tab
             // Optionally: Refresh sidebar view if needed, though handleTabRemove should cover it
-
         } catch (error) {
             Logger.error(`Error archiving tab ${tabId}:`, error);
         }
@@ -350,7 +357,7 @@ const Utils = {
             // Reopen the archived URL and restore its extension-owned membership.
             const newTab = await chrome.tabs.create({
                 url: archivedTabData.url,
-                active: true, // Make it active
+                active: true // Make it active
                 // windowId: currentWindow.id // Ensure it's in the current window
             });
 
@@ -361,7 +368,6 @@ const Utils = {
 
             // Return the created tab so caller can pin it if needed
             return newTab;
-
         } catch (error) {
             Logger.error(`Error restoring archived tab ${archivedTabData.url}:`, error);
             throw error;
@@ -400,7 +406,6 @@ const Utils = {
         await chrome.storage.sync.set({ invertTabOrder: enabled });
     },
 
-
     // Navigate to adjacent tab within a space (next or previous)
     _navigateTabInSpace: async function (tabId, sourceSpace, direction) {
         const temporaryTabs = sourceSpace?.temporaryTabs ?? [];
@@ -414,9 +419,10 @@ const Utils = {
         const currentIndex = allTabs.indexOf(tabId);
         if (currentIndex === -1) return;
 
-        const nextIndex = direction === 'next'
-            ? (currentIndex + 1) % allTabs.length
-            : (currentIndex - 1 + allTabs.length) % allTabs.length;
+        const nextIndex =
+            direction === 'next'
+                ? (currentIndex + 1) % allTabs.length
+                : (currentIndex - 1 + allTabs.length) % allTabs.length;
 
         chrome.tabs.update(allTabs[nextIndex], { active: true });
     },
@@ -429,33 +435,29 @@ const Utils = {
         return this._navigateTabInSpace(tabId, sourceSpace, 'prev');
     },
     findActiveSpaceAndTab: async function () {
-        Logger.log("[TabNavigation] finding space");
+        Logger.log('[TabNavigation] finding space');
         const spacesResult = await chrome.storage.local.get('spaces');
         const spaces = spacesResult.spaces || [];
-        Logger.log("[TabNavigation] Loaded spaces from storage:", spaces);
+        Logger.log('[TabNavigation] Loaded spaces from storage:', spaces);
         const foundTabs = await chrome.tabs.query({ active: true, currentWindow: true });
         if (foundTabs.length === 0) {
-            Logger.log("[TabNavigation] No active tab found!:");
+            Logger.log('[TabNavigation] No active tab found!:');
             return undefined;
         }
         const foundTab = foundTabs[0];
-        const spaceWithTempTab = spaces.find(space =>
-            space.temporaryTabs.includes(foundTab.id)
-        );
+        const spaceWithTempTab = spaces.find(space => space.temporaryTabs.includes(foundTab.id));
         if (spaceWithTempTab) {
             Logger.log(`[TabNavigation] Tab ${foundTab.id} is a temporary tab in space "${spaceWithTempTab.name}".`);
             return { space: spaceWithTempTab, tab: foundTab };
         }
 
-        const spaceWithBookmark = spaces.find(space =>
-            space.spaceBookmarks.includes(foundTab.id)
-        );
+        const spaceWithBookmark = spaces.find(space => space.spaceBookmarks.includes(foundTab.id));
         if (spaceWithBookmark) {
             Logger.log(`[TabNavigation] Tab ${foundTab.id} is a bookmarked tab in space "${spaceWithBookmark.name}".`);
             return { space: spaceWithBookmark, tab: foundTab };
         }
 
-        return undefined
+        return undefined;
     },
 
     // Helper function to adjust menu position to keep it within viewport
@@ -496,6 +498,6 @@ const Utils = {
         menu.style.left = `${left}px`;
         menu.style.top = `${top}px`;
     }
-}
+};
 
 export { Utils };

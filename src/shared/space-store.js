@@ -21,7 +21,8 @@ export function applySpacePatch(current, before, after) {
             result.push(target);
         }
         for (const [key, value] of Object.entries(next)) {
-            if (!sections.includes(key) && JSON.stringify(value) !== JSON.stringify(prev?.[key])) target[key] = clone(value);
+            if (!sections.includes(key) && JSON.stringify(value) !== JSON.stringify(prev?.[key]))
+                target[key] = clone(value);
         }
         for (const key of sections) {
             const oldIds = prev?.[key] || [];
@@ -30,15 +31,22 @@ export function applySpacePatch(current, before, after) {
             const deleted = oldIds.filter(id => !newIds.includes(id));
             const added = newIds.filter(id => !oldIds.includes(id));
             for (const id of added) {
-                for (const space of result) for (const section of sections) space[section] = space[section].filter(t => t !== id);
+                for (const space of result)
+                    for (const section of sections) space[section] = space[section].filter(t => t !== id);
             }
             const existing = target[key].filter(id => !deleted.includes(id));
-            target[key] = [...newIds.filter(id => existing.includes(id) || added.includes(id)), ...existing.filter(id => !newIds.includes(id))];
+            target[key] = [
+                ...newIds.filter(id => existing.includes(id) || added.includes(id)),
+                ...existing.filter(id => !newIds.includes(id))
+            ];
         }
     }
     if (JSON.stringify(before.map(s => s.id)) !== JSON.stringify(after.map(s => s.id))) {
         result.sort((a, b) => {
-            const rank = s => { const i = after.findIndex(n => n.id === s.id); return i < 0 ? after.length : i; };
+            const rank = s => {
+                const i = after.findIndex(n => n.id === s.id);
+                return i < 0 ? after.length : i;
+            };
             return rank(a) - rank(b);
         });
     }
@@ -46,23 +54,48 @@ export function applySpacePatch(current, before, after) {
 }
 
 export class SpaceStore {
-    constructor() { this.chain = Promise.resolve(); this.initialized = false; }
+    constructor() {
+        this.chain = Promise.resolve();
+        this.initialized = false;
+    }
     run(operation) {
-        const pending = this.chain.then(async () => { await this.initialize(); return operation(); });
+        const pending = this.chain.then(async () => {
+            await this.initialize();
+            return operation();
+        });
         this.chain = pending.catch(console.error);
         return pending;
     }
     async makeSpace(name, color = 'grey', folder = null) {
         folder ||= await LocalStorage.getOrCreateSpaceFolder(name);
         const entry = await LocalStorage.getOrCreateSpaceRegistryEntry(folder.id, { name, color });
-        return { id: entry.spaceUuid, spaceUuid: entry.spaceUuid, uuid: entry.spaceUuid,
-            bookmarkFolderId: folder.id, name, color: entry.color || color,
-            ...(entry.icon ? { icon: entry.icon } : {}), spaceBookmarks: [], temporaryTabs: [] };
+        return {
+            id: entry.spaceUuid,
+            spaceUuid: entry.spaceUuid,
+            uuid: entry.spaceUuid,
+            bookmarkFolderId: folder.id,
+            name,
+            color: entry.color || color,
+            ...(entry.icon ? { icon: entry.icon } : {}),
+            spaceBookmarks: [],
+            temporaryTabs: []
+        };
     }
     async initialize() {
         if (this.initialized) return;
-        const data = await chrome.storage.local.get(['spaces', 'spaceModelVersion', 'spaceTabSnapshot', 'archivedTabs']);
-        const session = await chrome.storage.session.get(['spaceSession', 'spaceRestoreQueue', 'activeSpaces', 'lastActiveSpace', 'restoredTabRanks']);
+        const data = await chrome.storage.local.get([
+            'spaces',
+            'spaceModelVersion',
+            'spaceTabSnapshot',
+            'archivedTabs'
+        ]);
+        const session = await chrome.storage.session.get([
+            'spaceSession',
+            'spaceRestoreQueue',
+            'activeSpaces',
+            'lastActiveSpace',
+            'restoredTabRanks'
+        ]);
         this.spaces = data.spaces || [];
         this.snapshotByTab = new Map((data.spaceTabSnapshot || []).filter(t => t.tabId).map(t => [t.tabId, t]));
         this.provisional = new Set();
@@ -93,12 +126,19 @@ export class SpaceStore {
             }
             this.spaces = migrated;
             if (migrated.length) await chrome.storage.local.set({ tabGroupImportDismissed: true });
-            if (data.archivedTabs) await chrome.storage.local.set({ archivedTabs: data.archivedTabs.map(t => ({ ...t, spaceId: idMap.get(t.spaceId) || t.spaceId })) });
+            if (data.archivedTabs)
+                await chrome.storage.local.set({
+                    archivedTabs: data.archivedTabs.map(t => ({ ...t, spaceId: idMap.get(t.spaceId) || t.spaceId }))
+                });
             this.restoreQueue = [];
         } else if (!session.spaceSession) {
             // Chrome tab IDs are session-local. Never accept an old ID after restart.
             this.restoreQueue = data.spaceTabSnapshot || [];
-            this.spaces.forEach(s => { s.spaceBookmarks = []; s.temporaryTabs = []; delete s.lastTab; });
+            this.spaces.forEach(s => {
+                s.spaceBookmarks = [];
+                s.temporaryTabs = [];
+                delete s.lastTab;
+            });
             this.active = {};
             this.lastActive = null;
             this.restoredRanks.clear();
@@ -111,7 +151,8 @@ export class SpaceStore {
             this.spaces.push(await this.makeSpace(this.defaultSpaceName));
         }
         const valid = new Set(live.map(t => t.id));
-        for (const space of this.spaces) for (const key of sections) space[key] = (space[key] || []).filter(id => valid.has(id));
+        for (const space of this.spaces)
+            for (const key of sections) space[key] = (space[key] || []).filter(id => valid.has(id));
         for (const tab of live) this.track(tab);
         this.initialized = true;
         await this.persist();
@@ -126,26 +167,35 @@ export class SpaceStore {
             let space = this.spaces.find(space => space.bookmarkFolderId === folder.id);
             if (!space) {
                 // Recover a missing/stale folder association without duplicating the space.
-                space = this.spaces.find(space => space.name === folder.title && !folders.some(node => node.id === space.bookmarkFolderId));
+                space = this.spaces.find(
+                    space => space.name === folder.title && !folders.some(node => node.id === space.bookmarkFolderId)
+                );
                 if (space) space.bookmarkFolderId = folder.id;
-                else { this.spaces.push(await this.makeSpace(folder.title, 'grey', folder)); continue; }
+                else {
+                    this.spaces.push(await this.makeSpace(folder.title, 'grey', folder));
+                    continue;
+                }
             }
             space.name = folder.title;
         }
         // Bookmark folders are durable, so discovery also restores their order in the switcher.
         const rank = new Map(folders.map((folder, index) => [folder.id, index]));
-        this.spaces.sort((a, b) =>
-            (rank.get(a.bookmarkFolderId) ?? folders.length) - (rank.get(b.bookmarkFolderId) ?? folders.length));
+        this.spaces.sort(
+            (a, b) =>
+                (rank.get(a.bookmarkFolderId) ?? folders.length) - (rank.get(b.bookmarkFolderId) ?? folders.length)
+        );
         return before !== JSON.stringify(this.spaces);
     }
     track(tab) {
         const url = tab.url || tab.pendingUrl;
         if (tab.pinned) {
-            for (const space of this.spaces) for (const key of sections) space[key] = space[key].filter(id => id !== tab.id);
+            for (const space of this.spaces)
+                for (const key of sections) space[key] = space[key].filter(id => id !== tab.id);
             return;
         }
         if (url?.startsWith(chrome.runtime?.getURL?.('') || 'chrome-extension://invalid/') && !isPracticeUrl(url)) {
-            for (const space of this.spaces) for (const key of sections) space[key] = space[key].filter(id => id !== tab.id);
+            for (const space of this.spaces)
+                for (const key of sections) space[key] = space[key].filter(id => id !== tab.id);
             return;
         }
         const existing = ownerOf(this.spaces, tab.id);
@@ -156,7 +206,9 @@ export class SpaceStore {
             for (const key of sections) existing[key] = existing[key].filter(id => id !== tab.id);
         }
         if (!url) this.provisional.add(tab.id);
-        const restoredIndex = this.restoreQueue.findIndex(t => t.url === url && this.spaces.some(s => s.id === t.spaceId));
+        const restoredIndex = this.restoreQueue.findIndex(
+            t => t.url === url && this.spaces.some(s => s.id === t.spaceId)
+        );
         const restored = restoredIndex >= 0 ? this.restoreQueue.splice(restoredIndex, 1)[0] : null;
         // Chrome can attach the current tab as opener even for Cmd/Ctrl+T.
         // A blank new-tab page belongs to the selected space, not that incidental opener.
@@ -165,10 +217,13 @@ export class SpaceStore {
         // A window with no space of its own yet (such as one Chrome opens for a link from another
         // app) uses the space last in use in any window; the default space is for when there
         // is none yet.
-        const space = this.spaces.find(s => s.id === restored?.spaceId) || openerSpace
-            || this.spaces.find(s => s.id === this.active[tab.windowId])
-            || this.spaces.find(s => s.id === this.lastActive)
-            || this.spaces.find(s => s.name === this.defaultSpaceName) || this.spaces[0];
+        const space =
+            this.spaces.find(s => s.id === restored?.spaceId) ||
+            openerSpace ||
+            this.spaces.find(s => s.id === this.active[tab.windowId]) ||
+            this.spaces.find(s => s.id === this.lastActive) ||
+            this.spaces.find(s => s.name === this.defaultSpaceName) ||
+            this.spaces[0];
         if (!space) return;
         const key = restored?.section || 'temporaryTabs';
         if (restored) {
@@ -177,7 +232,9 @@ export class SpaceStore {
             this.restoredRanks ||= new Map();
             this.restoredRanks.set(tab.id, restored.order);
             space[key].push(tab.id);
-            space[key].sort((a, b) => (this.restoredRanks.get(a) ?? Infinity) - (this.restoredRanks.get(b) ?? Infinity));
+            space[key].sort(
+                (a, b) => (this.restoredRanks.get(a) ?? Infinity) - (this.restoredRanks.get(b) ?? Infinity)
+            );
         } else {
             const openerIndex = space[key].indexOf(tab.openerTabId);
             if (openerIndex >= 0) space[key].splice(openerIndex + 1, 0, tab.id);
@@ -199,21 +256,41 @@ export class SpaceStore {
             this.restoredMetadata = [];
         }
         const snapshot = [];
-        for (const space of this.spaces) for (const section of sections) {
-            space[section] = [...new Set(space[section])].filter(id => tabs.has(id));
-            space[section].forEach((id, order) => {
-                const tab = tabs.get(id);
-                const record = { tabId: id, spaceId: space.id, section, order: this.restoredRanks.get(id) ?? order, url: tab.url || tab.pendingUrl || '',
-                    ...(pinnedStates[id] ? { pinnedState: pinnedStates[id] } : {}),
-                    ...(overrides[id] ? { nameOverride: overrides[id] } : {}) };
-                snapshot.push(record);
-                this.snapshotByTab.set(id, record);
-            });
+        for (const space of this.spaces)
+            for (const section of sections) {
+                space[section] = [...new Set(space[section])].filter(id => tabs.has(id));
+                space[section].forEach((id, order) => {
+                    const tab = tabs.get(id);
+                    const record = {
+                        tabId: id,
+                        spaceId: space.id,
+                        section,
+                        order: this.restoredRanks.get(id) ?? order,
+                        url: tab.url || tab.pendingUrl || '',
+                        ...(pinnedStates[id] ? { pinnedState: pinnedStates[id] } : {}),
+                        ...(overrides[id] ? { nameOverride: overrides[id] } : {})
+                    };
+                    snapshot.push(record);
+                    this.snapshotByTab.set(id, record);
+                });
+            }
+        await chrome.storage.local.set({
+            spaces: clone(this.spaces),
+            spaceModelVersion: 2,
+            spaceTabSnapshot: [...snapshot, ...this.restoreQueue]
+        });
+        await chrome.storage.session.set({
+            spaceSession: true,
+            activeSpaces: this.active,
+            lastActiveSpace: this.lastActive,
+            spaceRestoreQueue: this.restoreQueue,
+            restoredTabRanks: [...this.restoredRanks]
+        });
+        try {
+            await syncSpaceGroups(this.spaces, this.active);
+        } catch (error) {
+            console.warn('Tab group sync deferred:', error);
         }
-        await chrome.storage.local.set({ spaces: clone(this.spaces), spaceModelVersion: 2, spaceTabSnapshot: [...snapshot, ...this.restoreQueue] });
-        await chrome.storage.session.set({ spaceSession: true, activeSpaces: this.active, lastActiveSpace: this.lastActive, spaceRestoreQueue: this.restoreQueue, restoredTabRanks: [...this.restoredRanks] });
-        try { await syncSpaceGroups(this.spaces, this.active); }
-        catch (error) { console.warn('Tab group sync deferred:', error); }
     }
     async dispatch(message) {
         return this.run(async () => {
@@ -224,9 +301,10 @@ export class SpaceStore {
                 case 'patch':
                     for (const next of message.after) {
                         const prev = message.before.find(s => s.id === next.id);
-                        for (const key of sections) if (JSON.stringify(next[key]) !== JSON.stringify(prev?.[key])) {
-                            for (const id of next[key] || []) this.restoredRanks.delete(id);
-                        }
+                        for (const key of sections)
+                            if (JSON.stringify(next[key]) !== JSON.stringify(prev?.[key])) {
+                                for (const id of next[key] || []) this.restoredRanks.delete(id);
+                            }
                     }
                     this.spaces = applySpacePatch(this.spaces, message.before, message.after);
                     if (!this.spaces.length) this.spaces.push(await this.makeSpace(this.defaultSpaceName));
@@ -240,7 +318,8 @@ export class SpaceStore {
                     const target = this.spaces.find(s => s.id === message.spaceId);
                     if (target) {
                         this.provisional.delete(message.tabId);
-                        for (const space of this.spaces) for (const key of sections) space[key] = space[key].filter(id => id !== message.tabId);
+                        for (const space of this.spaces)
+                            for (const key of sections) space[key] = space[key].filter(id => id !== message.tabId);
                         target[message.pinned ? 'spaceBookmarks' : 'temporaryTabs'].push(message.tabId);
                     }
                     break;
@@ -254,65 +333,94 @@ export class SpaceStore {
                         for (let i = 2; this.spaces.some(s => s.name === name); i++) name = `${base} ${i}`;
                         const space = await this.makeSpace(name, group.color);
                         const ids = tabs.filter(t => t.groupId === group.id && !t.pinned).map(t => t.id);
-                        for (const old of this.spaces) for (const key of sections) old[key] = old[key].filter(id => !ids.includes(id));
+                        for (const old of this.spaces)
+                            for (const key of sections) old[key] = old[key].filter(id => !ids.includes(id));
                         space.temporaryTabs = ids;
                         this.spaces.push(space);
                     }
                     await chrome.storage.local.set({ tabGroupImportDismissed: true });
                     break;
                 }
-                default: throw new Error('Unknown space action');
+                default:
+                    throw new Error('Unknown space action');
             }
             if (message.action !== 'get') await this.persist();
             return clone(this.spaces);
         });
     }
     install() {
-        const handle = operation => this.run(async () => { await operation(); await this.persist(); }).catch(console.error);
+        const handle = operation =>
+            this.run(async () => {
+                await operation();
+                await this.persist();
+            }).catch(console.error);
         chrome.tabs.onCreated.addListener(tab => handle(() => this.track(tab)));
         chrome.tabs.onUpdated.addListener((id, change, tab) => {
             if (change.url || change.pinned !== undefined) handle(() => this.track(tab));
         });
-        chrome.tabs.onRemoved.addListener((id, info) => handle(() => {
-            const record = this.snapshotByTab.get(id);
-            if (info?.isWindowClosing && record && this.spaces.some(s => s.id === record.spaceId)) this.restoreQueue.push(record);
-            this.snapshotByTab.delete(id);
-            this.provisional.delete(id);
-            for (const space of this.spaces) {
-                for (const key of sections) space[key] = space[key].filter(t => t !== id);
-                if (space.lastTab === id) delete space.lastTab;
-            }
-        }));
-        chrome.tabs.onReplaced.addListener((added, removed) => handle(() => {
-            for (const space of this.spaces) {
-                for (const key of sections) space[key] = space[key].map(id => id === removed ? added : id);
-                if (space.lastTab === removed) space.lastTab = added;
-            }
-        }));
-        chrome.tabs.onActivated.addListener(info => handle(async () => {
-            const space = ownerOf(this.spaces, info.tabId);
-            if (!space) return;
-            space.lastTab = info.tabId;
-            this.active[info.windowId] = space.id;
-            // A tab changing in a window you are not looking at is not the space in use.
-            if (await chrome.windows.get(info.windowId).then(win => win.focused, () => false)) this.lastActive = space.id;
-        }));
-        chrome.windows.onFocusChanged.addListener(windowId => handle(() => {
-            if (this.spaces.some(s => s.id === this.active[windowId])) this.lastActive = this.active[windowId];
-        }));
+        chrome.tabs.onRemoved.addListener((id, info) =>
+            handle(() => {
+                const record = this.snapshotByTab.get(id);
+                if (info?.isWindowClosing && record && this.spaces.some(s => s.id === record.spaceId))
+                    this.restoreQueue.push(record);
+                this.snapshotByTab.delete(id);
+                this.provisional.delete(id);
+                for (const space of this.spaces) {
+                    for (const key of sections) space[key] = space[key].filter(t => t !== id);
+                    if (space.lastTab === id) delete space.lastTab;
+                }
+            })
+        );
+        chrome.tabs.onReplaced.addListener((added, removed) =>
+            handle(() => {
+                for (const space of this.spaces) {
+                    for (const key of sections) space[key] = space[key].map(id => (id === removed ? added : id));
+                    if (space.lastTab === removed) space.lastTab = added;
+                }
+            })
+        );
+        chrome.tabs.onActivated.addListener(info =>
+            handle(async () => {
+                const space = ownerOf(this.spaces, info.tabId);
+                if (!space) return;
+                space.lastTab = info.tabId;
+                this.active[info.windowId] = space.id;
+                // A tab changing in a window you are not looking at is not the space in use.
+                if (
+                    await chrome.windows.get(info.windowId).then(
+                        win => win.focused,
+                        () => false
+                    )
+                )
+                    this.lastActive = space.id;
+            })
+        );
+        chrome.windows.onFocusChanged.addListener(windowId =>
+            handle(() => {
+                if (this.spaces.some(s => s.id === this.active[windowId])) this.lastActive = this.active[windowId];
+            })
+        );
         chrome.storage.onChanged.addListener((changes, area) => {
             if (area === 'local' && (changes.pinnedTabStatesById || changes.tabNameOverridesById)) handle(() => {});
             if (area === 'sync' && changes.syncTabGroups) handle(() => {});
-            if (area === 'sync' && changes.defaultSpaceName) handle(() => { this.defaultSpaceName = changes.defaultSpaceName.newValue || 'Home'; });
+            if (area === 'sync' && changes.defaultSpaceName)
+                handle(() => {
+                    this.defaultSpaceName = changes.defaultSpaceName.newValue || 'Home';
+                });
         });
         // Tab-strip changes only request a projection; they never alter the model.
         let syncTimer;
         const scheduleSync = () => {
             clearTimeout(syncTimer);
-            syncTimer = setTimeout(() => this.run(() => syncSpaceGroups(this.spaces, this.active)).catch(console.error), 200);
+            syncTimer = setTimeout(
+                () => this.run(() => syncSpaceGroups(this.spaces, this.active)).catch(console.error),
+                200
+            );
         };
         chrome.tabs.onMoved.addListener(scheduleSync);
-        chrome.tabs.onUpdated.addListener((id, change) => { if (change.groupId !== undefined) scheduleSync(); });
+        chrome.tabs.onUpdated.addListener((id, change) => {
+            if (change.groupId !== undefined) scheduleSync();
+        });
         chrome.tabGroups.onRemoved.addListener(scheduleSync);
         chrome.tabGroups.onUpdated.addListener(scheduleSync);
         this.run(() => {}).catch(console.error);

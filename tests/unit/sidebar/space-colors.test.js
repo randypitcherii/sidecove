@@ -10,5 +10,11 @@ test('new spaces preselect the first unused color in palette order', () => {
 test('after exhausting the palette, fallback is its first entry', () => {
     const spaces = palette.map(color => ({ color }));
     assert.equal(firstUnusedColor(spaces, palette), 'grey');
-    assert.equal(firstUnusedColor(spaces.filter(space => space.color !== 'pink'), palette), 'pink');
+    assert.equal(
+        firstUnusedColor(
+            spaces.filter(space => space.color !== 'pink'),
+            palette
+        ),
+        'pink'
+    );
 });

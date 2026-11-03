@@ -2,11 +2,11 @@ import { ROOT_FOLDER_TITLE } from './constants.js';
 import { getSpaceTabs, spaceRequest } from './space-client.js';
 /**
  * Bookmark Utils - Consolidated bookmark operations for Sidecove
- * 
+ *
  * Purpose: Centralized utilities for all bookmark-related operations to eliminate code duplication
  * Key Functions: Sidecove folder management, recursive traversal, URL matching, bookmark operations
  * Architecture: Static utility class with consistent error handling and Chrome API abstraction
- * 
+ *
  * Critical Notes:
  * - Uses robust 3-method fallback approach for finding Sidecove folder
  * - Provides unified recursive traversal with flexible options
@@ -18,7 +18,6 @@ import { getSpaceTabs, spaceRequest } from './space-client.js';
 import { Logger } from './logger.js';
 
 export const BookmarkUtils = {
-
     /**
      * Robust method to find the Sidecove folder in Chrome bookmarks
      * Uses 3-method fallback approach for maximum reliability across browsers/locales
@@ -50,10 +49,11 @@ export const BookmarkUtils = {
             }
 
             // Method 3: Check "Other Bookmarks" specifically (handles locale variations)
-            const otherBookmarksFolder = rootChildren.find(folder =>
-                folder.id === '2' ||
-                folder.title.toLowerCase().includes('other') ||
-                folder.title.toLowerCase().includes('bookmark')
+            const otherBookmarksFolder = rootChildren.find(
+                folder =>
+                    folder.id === '2' ||
+                    folder.title.toLowerCase().includes('other') ||
+                    folder.title.toLowerCase().includes('bookmark')
             );
 
             if (otherBookmarksFolder) {
@@ -71,13 +71,11 @@ export const BookmarkUtils = {
 
             Logger.log('[BookmarkUtils] Sidecove folder not found');
             return null;
-
         } catch (error) {
             Logger.error('[BookmarkUtils] Error in findSidecoveFolder:', error);
             return null;
         }
     },
-
 
     /**
      * Recursively get all bookmarks from a folder and its subfolders
@@ -239,12 +237,22 @@ export const BookmarkUtils = {
      * @param {Set} claimedTabIds - Tab IDs already bound to a bookmark in this run (shared across recursion)
      * @returns {Promise<Array>} Array of tab IDs that match bookmarks
      */
-    async matchTabsWithBookmarks(folder, spaceId, setTabNameOverride = null, setPinnedTabState = null, claimedTabIds = null, getUrlKey = null, windowId = null) {
+    async matchTabsWithBookmarks(
+        folder,
+        spaceId,
+        setTabNameOverride = null,
+        setPinnedTabState = null,
+        claimedTabIds = null,
+        getUrlKey = null,
+        windowId = null
+    ) {
         const bookmarks = [];
         const items = await chrome.bookmarks.getChildren(folder.id);
         const { spaces = [] } = await chrome.storage.local.get('spaces');
         const pinnedIds = new Set(spaces.find(s => s.id === spaceId)?.spaceBookmarks || []);
-        const tabs = (await getSpaceTabs(spaceId)).filter(tab => !tab.pinned && pinnedIds.has(tab.id) && (windowId === null || tab.windowId === windowId));
+        const tabs = (await getSpaceTabs(spaceId)).filter(
+            tab => !tab.pinned && pinnedIds.has(tab.id) && (windowId === null || tab.windowId === windowId)
+        );
         const claimed = claimedTabIds || new Set();
         const { pinnedTabStatesById = {} } = await chrome.storage.local.get('pinnedTabStatesById');
 
@@ -254,8 +262,9 @@ export const BookmarkUtils = {
                 // been bound to another bookmark in this run, so URL twins don't both
                 // get claimed by a single bookmark.
                 const available = tabs.filter(t => !claimed.has(t.id));
-                let tab = available.find(t => pinnedTabStatesById[t.id]?.bookmarkId === item.id)
-                    || available.find(t => t.url === item.url && !pinnedTabStatesById[t.id]?.bookmarkId);
+                let tab =
+                    available.find(t => pinnedTabStatesById[t.id]?.bookmarkId === item.id) ||
+                    available.find(t => t.url === item.url && !pinnedTabStatesById[t.id]?.bookmarkId);
                 // Legacy recovery is limited to already-pinned members without a binding.
                 // Ordinary temporary tabs must never be promoted by a matching URL.
                 if (!tab && getUrlKey) {
@@ -279,7 +288,15 @@ export const BookmarkUtils = {
                 }
             } else {
                 // This is a folder, recursively process it
-                const subFolderBookmarks = await this.matchTabsWithBookmarks(item, spaceId, setTabNameOverride, setPinnedTabState, claimed, getUrlKey, windowId);
+                const subFolderBookmarks = await this.matchTabsWithBookmarks(
+                    item,
+                    spaceId,
+                    setTabNameOverride,
+                    setPinnedTabState,
+                    claimed,
+                    getUrlKey,
+                    windowId
+                );
                 bookmarks.push(...subFolderBookmarks);
             }
         }
@@ -296,8 +313,10 @@ export const BookmarkUtils = {
     isUnderSidecoveFolder(bookmark, sidecoveFolderId) {
         // Simple heuristic: check if the bookmark's parent path includes the Sidecove folder
         // This is a simplified check - for a more robust solution, we'd need to traverse up the parent chain
-        return bookmark.parentId && (bookmark.parentId === sidecoveFolderId ||
-            bookmark.parentId.startsWith(sidecoveFolderId));
+        return (
+            bookmark.parentId &&
+            (bookmark.parentId === sidecoveFolderId || bookmark.parentId.startsWith(sidecoveFolderId))
+        );
     },
 
     /**

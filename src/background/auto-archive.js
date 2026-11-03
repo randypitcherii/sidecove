@@ -22,7 +22,7 @@ export function registerAutoArchive(spaceStore) {
             // Optional: Prune old entries if the storage grows too large
             await chrome.storage.local.set({ [TAB_ACTIVITY_STORAGE_KEY]: activityData });
         } catch (error) {
-            Logger.error("Error updating tab activity:", error);
+            Logger.error('Error updating tab activity:', error);
         }
     }
 
@@ -36,10 +36,9 @@ export function registerAutoArchive(spaceStore) {
             delete activityData[tabId];
             await chrome.storage.local.set({ [TAB_ACTIVITY_STORAGE_KEY]: activityData });
         } catch (error) {
-            Logger.error("Error removing tab activity:", error);
+            Logger.error('Error removing tab activity:', error);
         }
     }
-
 
     // --- Alarm Creation ---
     async function setupAutoArchiveAlarm() {
@@ -58,12 +57,12 @@ export function registerAutoArchive(spaceStore) {
                 await chrome.alarms.clear(AUTO_ARCHIVE_ALARM_NAME);
             }
         } catch (error) {
-            Logger.error("Error setting up auto-archive alarm:", error);
+            Logger.error('Error setting up auto-archive alarm:', error);
         }
     }
 
     // --- Alarm Listener ---
-    chrome.alarms.onAlarm.addListener(async (alarm) => {
+    chrome.alarms.onAlarm.addListener(async alarm => {
         if (alarm.name === AUTO_ARCHIVE_ALARM_NAME) {
             await runAutoArchiveCheck();
         }
@@ -87,10 +86,12 @@ export function registerAutoArchive(spaceStore) {
             // URLs normalized with the same pinned-URL key the renderer uses (origin+path).
             const protectedUrlKeys = new Set();
             try {
-                const sidecoveFolder = (await chrome.bookmarks.search({ title: ROOT_FOLDER_TITLE })).find(node => !node.url);
+                const sidecoveFolder = (await chrome.bookmarks.search({ title: ROOT_FOLDER_TITLE })).find(
+                    node => !node.url
+                );
                 if (sidecoveFolder) {
                     const [subTree] = await chrome.bookmarks.getSubTree(sidecoveFolder.id);
-                    const collectUrls = (node) => {
+                    const collectUrls = node => {
                         if (!node) return;
                         if (node.url) {
                             protectedUrlKeys.add(Utils.getPinnedUrlKey(node.url));
@@ -150,7 +151,6 @@ export function registerAutoArchive(spaceStore) {
                 }
             }
 
-
             for (const tab of tabsToArchive) {
                 const tabData = {
                     url: tab.url,
@@ -168,9 +168,8 @@ export function registerAutoArchive(spaceStore) {
                     // await updateTabLastActivity(tab.id);
                 }
             }
-
         } catch (error) {
-            Logger.error("Error during auto-archive check:", error);
+            Logger.error('Error during auto-archive check:', error);
         }
     }
 
@@ -204,7 +203,7 @@ export function registerAutoArchive(spaceStore) {
     });
 
     // Track tab activation
-    chrome.tabs.onActivated.addListener(async (activeInfo) => {
+    chrome.tabs.onActivated.addListener(async activeInfo => {
         await updateTabLastActivity(activeInfo.tabId);
     });
 

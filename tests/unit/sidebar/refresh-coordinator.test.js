@@ -2,7 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RefreshCoordinator } from '../../../src/sidebar/refresh-coordinator.js';
 
-const immediate = callback => { queueMicrotask(callback); return callback; };
+const immediate = callback => {
+    queueMicrotask(callback);
+    return callback;
+};
 const cancel = () => {};
 const flush = () => new Promise(resolve => setTimeout(resolve, 0));
 
@@ -11,8 +14,11 @@ test('bookmark invalidation renders even when adoption sees activation-only meta
     const coordinator = new RefreshCoordinator({
         readSpaces: async () => [{ id: 's', lastTab: 2 }],
         adoptSpaces: async () => false,
-        render: async () => { renders++; },
-        schedule: immediate, cancel
+        render: async () => {
+            renders++;
+        },
+        schedule: immediate,
+        cancel
     });
     coordinator.invalidateBookmarks();
     await flush();
@@ -24,11 +30,17 @@ test('an invalidation delivered during a delayed render survives for a second dr
     let release;
     let renders = 0;
     const coordinator = new RefreshCoordinator({
-        readSpaces: async () => [], adoptSpaces: async () => false,
+        readSpaces: async () => [],
+        adoptSpaces: async () => false,
         render: async () => {
             renders++;
-            if (renders === 1) await new Promise(resolve => { release = resolve; });
-        }, schedule: immediate, cancel
+            if (renders === 1)
+                await new Promise(resolve => {
+                    release = resolve;
+                });
+        },
+        schedule: immediate,
+        cancel
     });
     coordinator.invalidateBookmarks();
     await flush();
@@ -53,10 +65,16 @@ test('busy and failed drains retain invalidation until a later successful retry'
             return [];
         },
         adoptSpaces: async () => false,
-        render: async () => { renders++; },
+        render: async () => {
+            renders++;
+        },
         isBusy: () => busy,
         onError: error => errors.push(error.message),
-        schedule: callback => { scheduled.push(callback); return callback; }, cancel
+        schedule: callback => {
+            scheduled.push(callback);
+            return callback;
+        },
+        cancel
     });
     coordinator.invalidateBookmarks();
     await scheduled.shift()();
@@ -75,8 +93,13 @@ test('busy and failed drains retain invalidation until a later successful retry'
 test('activation-only space updates avoid rendering without bookmark dirtiness', async () => {
     let renders = 0;
     const coordinator = new RefreshCoordinator({
-        readSpaces: async () => [], adoptSpaces: async () => false,
-        render: async () => { renders++; }, schedule: immediate, cancel
+        readSpaces: async () => [],
+        adoptSpaces: async () => false,
+        render: async () => {
+            renders++;
+        },
+        schedule: immediate,
+        cancel
     });
     coordinator.invalidateSpaces();
     await flush();
@@ -87,9 +110,16 @@ test('a render failure does not acknowledge the bookmark generation', async () =
     let fail = true;
     const scheduled = [];
     const coordinator = new RefreshCoordinator({
-        readSpaces: async () => [], adoptSpaces: async () => false,
-        render: async () => { if (fail) throw new Error('render failed'); },
-        schedule: callback => { scheduled.push(callback); return callback; }, cancel
+        readSpaces: async () => [],
+        adoptSpaces: async () => false,
+        render: async () => {
+            if (fail) throw new Error('render failed');
+        },
+        schedule: callback => {
+            scheduled.push(callback);
+            return callback;
+        },
+        cancel
     });
     coordinator.invalidateBookmarks();
     await scheduled.shift()();
@@ -106,11 +136,23 @@ test('an editor starting during a delayed read prevents adoption and acknowledgm
     let renders = 0;
     const scheduled = [];
     const coordinator = new RefreshCoordinator({
-        readSpaces: () => new Promise(resolve => { finishRead = resolve; }),
-        adoptSpaces: async () => { adoptions++; return true; },
-        render: async () => { renders++; },
+        readSpaces: () =>
+            new Promise(resolve => {
+                finishRead = resolve;
+            }),
+        adoptSpaces: async () => {
+            adoptions++;
+            return true;
+        },
+        render: async () => {
+            renders++;
+        },
         isBusy: () => busy,
-        schedule: callback => { scheduled.push(callback); return callback; }, cancel
+        schedule: callback => {
+            scheduled.push(callback);
+            return callback;
+        },
+        cancel
     });
     coordinator.invalidateBookmarks();
     const drain = scheduled.shift()();
@@ -130,11 +172,20 @@ test('persistent failures use bounded backoff and explicit retry retains dirty w
     const scheduled = [];
     const delays = [];
     const coordinator = new RefreshCoordinator({
-        readSpaces: async () => { reads++; if (fail) throw new Error('persistent'); return []; },
+        readSpaces: async () => {
+            reads++;
+            if (fail) throw new Error('persistent');
+            return [];
+        },
         adoptSpaces: async () => false,
         render: async () => {},
         maxRetries: 2,
-        schedule: (callback, delay) => { scheduled.push(callback); delays.push(delay); return callback; }, cancel
+        schedule: (callback, delay) => {
+            scheduled.push(callback);
+            delays.push(delay);
+            return callback;
+        },
+        cancel
     });
     coordinator.invalidateBookmarks();
     await scheduled.shift()();

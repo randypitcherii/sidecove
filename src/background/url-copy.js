@@ -34,7 +34,9 @@ export async function copyCurrentTabUrlWithFallback({ chromeApi = globalThis.chr
                 });
                 if (response?.success !== true) throw new Error(response?.error || 'Offscreen clipboard copy failed');
                 await chromeApi.offscreen.closeDocument?.();
-                try { chromeApi.runtime.sendMessage({ action: 'urlCopySuccess' }); } catch (notifyError) {
+                try {
+                    chromeApi.runtime.sendMessage({ action: 'urlCopySuccess' });
+                } catch (notifyError) {
                     logger.log?.('[URLCopy] Could not notify sidebar:', notifyError);
                 }
                 return true;

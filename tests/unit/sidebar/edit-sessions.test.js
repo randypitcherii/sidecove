@@ -10,9 +10,13 @@ test('an editor remains active through async commit and wakes refresh once on re
     const session = registry.begin('folder', '123');
     const first = registry.complete(session, async () => {
         commits++;
-        await new Promise(resolve => { release = resolve; });
+        await new Promise(resolve => {
+            release = resolve;
+        });
     });
-    const second = registry.complete(session, async () => { commits++; });
+    const second = registry.complete(session, async () => {
+        commits++;
+    });
     assert.equal(first, second);
     assert.equal(registry.isActive(), true);
     await Promise.resolve();
@@ -26,7 +30,12 @@ test('an editor remains active through async commit and wakes refresh once on re
 test('cancel releases the exact editor even when its operation fails', async () => {
     const registry = new EditSessionRegistry();
     const session = registry.begin('tab', 7);
-    await assert.rejects(registry.complete(session, async () => { throw new Error('deleted'); }), /deleted/);
+    await assert.rejects(
+        registry.complete(session, async () => {
+            throw new Error('deleted');
+        }),
+        /deleted/
+    );
     assert.equal(registry.isActive(), false);
 });
 

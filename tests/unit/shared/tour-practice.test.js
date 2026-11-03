@@ -4,18 +4,32 @@ import { cleanupPracticeTabs, preparePractice, isPracticeUrl, practiceUrl } from
 import { TOUR_STEPS } from '../../../src/shared/tour-state.js';
 const base = 'chrome-extension://sidecove/';
 function mockTabs() {
-    const tabs = [], created = [];
-    globalThis.chrome = { runtime: { getURL: path => base + path }, tabs: {
-        async query({ windowId }) { return tabs.filter(tab => tab.windowId === windowId); },
-        async create(options) { created.push(options); const tab = { ...options, id: tabs.length + 1 }; tabs.push(tab); return tab; }
-    } };
+    const tabs = [],
+        created = [];
+    globalThis.chrome = {
+        runtime: { getURL: path => base + path },
+        tabs: {
+            async query({ windowId }) {
+                return tabs.filter(tab => tab.windowId === windowId);
+            },
+            async create(options) {
+                created.push(options);
+                const tab = { ...options, id: tabs.length + 1 };
+                tabs.push(tab);
+                return tab;
+            }
+        }
+    };
     return { tabs, created };
 }
 const state = step => ({ version: 3, status: 'active', runId: 'test', windowId: 7, step });
 test('practice tabs are inactive, per lesson, and reused across panel reopen', async () => {
     const { created } = mockTabs();
-    for (const step of TOUR_STEPS.map((step, index) => ['pins', 'folders', 'favorites', 'archive'].includes(step.id) ? index : -1).filter(index => index >= 0)) {
-        const before = state(step), message = { runId: 'test', step };
+    for (const step of TOUR_STEPS.map((step, index) =>
+        ['pins', 'folders', 'favorites', 'archive'].includes(step.id) ? index : -1
+    ).filter(index => index >= 0)) {
+        const before = state(step),
+            message = { runId: 'test', step };
         const first = await preparePractice(before, message, TOUR_STEPS);
         const reopened = await preparePractice(first, message, TOUR_STEPS);
         assert.deepEqual(first.practiceTabs, reopened.practiceTabs);

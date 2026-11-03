@@ -1,15 +1,37 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { selectWindowSpaceTabs, mergeVisibleOrder, mergeCapturedTemporaryOrder, saveBookmarkOrder } from '../../../src/sidebar/sidebar-tabs.js';
+import {
+    selectWindowSpaceTabs,
+    mergeVisibleOrder,
+    mergeCapturedTemporaryOrder,
+    saveBookmarkOrder
+} from '../../../src/sidebar/sidebar-tabs.js';
 
 test('window-scoped space tabs retain extension order despite native order and duplicate URLs', () => {
     const space = { spaceBookmarks: [3, 2], temporaryTabs: [4, 1, 5] };
-    const tabs = [1, 2, 3, 4, 5].map(id => ({ id, windowId: id % 2 ? 10 : 20, url: 'https://same.test', pinned: id === 5 }));
-    assert.deepEqual(selectWindowSpaceTabs(space, tabs, 10).map(t => t.id), [3, 1]);
-    assert.deepEqual(selectWindowSpaceTabs(space, tabs, 20).map(t => t.id), [2, 4]);
+    const tabs = [1, 2, 3, 4, 5].map(id => ({
+        id,
+        windowId: id % 2 ? 10 : 20,
+        url: 'https://same.test',
+        pinned: id === 5
+    }));
+    assert.deepEqual(
+        selectWindowSpaceTabs(space, tabs, 10).map(t => t.id),
+        [3, 1]
+    );
+    assert.deepEqual(
+        selectWindowSpaceTabs(space, tabs, 20).map(t => t.id),
+        [2, 4]
+    );
     tabs[0].windowId = 20;
-    assert.deepEqual(selectWindowSpaceTabs(space, tabs, 10).map(t => t.id), [3]);
-    assert.deepEqual(selectWindowSpaceTabs(space, tabs, 20).map(t => t.id), [2, 4, 1]);
+    assert.deepEqual(
+        selectWindowSpaceTabs(space, tabs, 10).map(t => t.id),
+        [3]
+    );
+    assert.deepEqual(
+        selectWindowSpaceTabs(space, tabs, 20).map(t => t.id),
+        [2, 4, 1]
+    );
 });
 test('reordering one window preserves other window slots and membership', () => {
     assert.deepEqual(mergeVisibleOrder([1, 2, 3, 4], [3, 1]), [3, 2, 1, 4]);
@@ -20,12 +42,18 @@ test('captured temporary drop order survives delayed demotion and preserves othe
     assert.deepEqual(mergeCapturedTemporaryOrder([1, 20, 2, 21, 3], [3, 1, 2], true), [2, 20, 1, 21, 3]);
 });
 test('bookmark order requests send the rendered baseline and canonical destination', async () => {
-    globalThis.chrome = { runtime: { sendMessage: async request => {
-        assert.deepEqual(request.operation.parents[0], {
-            parentId: 'folder', expectedCanonicalIds: ['a', 'b', 'c'], desiredCanonicalIds: ['c', 'a', 'b']
-        });
-        return { success: true, orders: { folder: ['c', 'a', 'b'] } };
-    } } };
+    globalThis.chrome = {
+        runtime: {
+            sendMessage: async request => {
+                assert.deepEqual(request.operation.parents[0], {
+                    parentId: 'folder',
+                    expectedCanonicalIds: ['a', 'b', 'c'],
+                    desiredCanonicalIds: ['c', 'a', 'b']
+                });
+                return { success: true, orders: { folder: ['c', 'a', 'b'] } };
+            }
+        }
+    };
     const response = await saveBookmarkOrder('folder', ['a', 'b', 'c'], ['c', 'a', 'b']);
     assert.deepEqual(response.orders.folder, ['c', 'a', 'b']);
 });

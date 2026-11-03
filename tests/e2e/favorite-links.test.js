@@ -8,7 +8,12 @@ let browser, page, server, base, fixture;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const favoriteRow = () => `.space.active [data-tab-type="pinned"] .tab[data-bookmark-id="${fixture.bookmarkId}"]`;
 const temporaryRow = id => `.space.active [data-tab-type="temporary"] .tab[data-tab-id="${id}"]`;
-const bindingOf = id => page.evaluate(async id => (await chrome.storage.local.get('pinnedTabStatesById')).pinnedTabStatesById?.[id]?.bookmarkId || null, id);
+const bindingOf = id =>
+    page.evaluate(
+        async id =>
+            (await chrome.storage.local.get('pinnedTabStatesById')).pinnedTabStatesById?.[id]?.bookmarkId || null,
+        id
+    );
 const openTab = url => page.evaluate(async url => (await chrome.tabs.create({ url, active: false })).id, url);
 const closeFavoriteTab = async () => {
     const id = await page.$eval(favoriteRow(), row => Number(row.dataset.tabId));
@@ -17,7 +22,10 @@ const closeFavoriteTab = async () => {
 };
 
 beforeAll(async () => {
-    server = createServer((req, res) => { res.setHeader('Content-Type', 'text/html'); res.end(`<title>${req.url}</title>`); });
+    server = createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/html');
+        res.end(`<title>${req.url}</title>`);
+    });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     base = `http://127.0.0.1:${server.address().port}`;
     const result = await launchBrowserWithExtension();
@@ -26,7 +34,11 @@ beforeAll(async () => {
     page.on('pageerror', error => console.error('Sidebar error:', error.message));
     fixture = await page.evaluate(async base => {
         const { spaces } = await chrome.runtime.sendMessage({ type: 'spaceStore', action: 'get' });
-        const bookmark = await chrome.bookmarks.create({ parentId: spaces[0].bookmarkFolderId, title: 'Video first', url: `${base}/watch?v=first` });
+        const bookmark = await chrome.bookmarks.create({
+            parentId: spaces[0].bookmarkFolderId,
+            title: 'Video first',
+            url: `${base}/watch?v=first`
+        });
         return { bookmarkId: bookmark.id };
     }, base);
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -46,7 +58,11 @@ test.each([
 ])('clicking a closed favorite opens its own tab while an unlinked tab shows %s', async (_label, path) => {
     const other = await openTab(`${base}${path}`);
     await page.waitForSelector(temporaryRow(other));
-    await page.waitForFunction(async ({ id, url }) => (await chrome.tabs.get(id)).url === url, { polling: 100 }, { id: other, url: `${base}${path}` });
+    await page.waitForFunction(
+        async ({ id, url }) => (await chrome.tabs.get(id)).url === url,
+        { polling: 100 },
+        { id: other, url: `${base}${path}` }
+    );
     const before = await page.evaluate(async () => (await chrome.tabs.query({})).length);
     await page.click(`${favoriteRow()}.bookmark-only`);
     await page.waitForSelector(`${favoriteRow()}[data-tab-id]`);
@@ -60,7 +76,7 @@ test.each([
     await closeFavoriteTab();
 });
 
-test('a tab opened from elsewhere on exactly a closed favorite\'s link stays an ordinary tab', async () => {
+test("a tab opened from elsewhere on exactly a closed favorite's link stays an ordinary tab", async () => {
     const id = await openTab(`${base}/watch?v=first`);
     await page.waitForSelector(temporaryRow(id));
     await sleep(800);

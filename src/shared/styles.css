@@ -1,7 +1,7 @@
 /* Varela Round ships with the extension so no page fetches fonts from the network. */
 @font-face {
-    font-family: "Varela Round";
-    src: url("/assets/varela-round.ttf") format("truetype");
+    font-family: 'Varela Round';
+    src: url('/assets/varela-round.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
@@ -36,7 +36,9 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    font-family:
+        -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue',
+        sans-serif;
     font-size: 0.8rem;
     font-weight: 500;
     color: #333;
@@ -80,7 +82,10 @@ h3 {
     height: 44px;
     border-radius: 10px;
     cursor: pointer;
-    transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+    transition:
+        background-color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.1s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -89,7 +94,7 @@ h3 {
 
 .pinned-favicon.active,
 .pinned-favicon.active:hover {
-    background-color: #ECEFF1;
+    background-color: #eceff1;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -114,7 +119,9 @@ h3 {
     background-color: #fff;
     border: none;
     border-radius: 10px;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.06);
+    box-shadow:
+        0 8px 28px rgba(0, 0, 0, 0.16),
+        0 0 0 1px rgba(0, 0, 0, 0.06);
     z-index: 1000;
     min-width: 170px;
     animation: sidecove-pop-in 0.12s ease-out;
@@ -165,7 +172,7 @@ h3 {
     min-width: 150px;
 }
 
-.context-menu-item.with-submenu:hover>.context-menu.submenu {
+.context-menu-item.with-submenu:hover > .context-menu.submenu {
     display: block;
 }
 
@@ -180,7 +187,9 @@ h3 {
     border-radius: 10px;
     background-color: rgba(255, 255, 255, 0.18);
     color: rgba(0, 0, 0, 0.55);
-    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+    transition:
+        background-color 0.15s ease,
+        box-shadow 0.15s ease;
 }
 
 .tab-search:hover {
@@ -246,7 +255,7 @@ h3 {
 }
 
 .search-result.highlighted {
-    background-color: #ECEFF1;
+    background-color: #eceff1;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -276,8 +285,14 @@ h3 {
 }
 
 @keyframes sidecove-fade-in {
-    from { opacity: 0; transform: translateY(2px); }
-    to { opacity: 1; transform: none; }
+    from {
+        opacity: 0;
+        transform: translateY(2px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
 .spaces-list {
@@ -334,7 +349,9 @@ h3 {
     margin-right: 8px;
     border-radius: 4px;
     opacity: 0;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -425,7 +442,9 @@ h3 {
     padding: 4px;
     background-color: #fff;
     border-radius: 10px;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.06);
+    box-shadow:
+        0 8px 28px rgba(0, 0, 0, 0.16),
+        0 0 0 1px rgba(0, 0, 0, 0.06);
     display: none;
     flex-direction: column;
     min-width: 170px;
@@ -470,7 +489,6 @@ h3 {
     -webkit-appearance: none;
 }
 
-
 .color-picker-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -510,36 +528,36 @@ h3 {
 }
 
 /* Swatches show the same override as the space background (upstream issue #39). */
-.color-swatch[data-color="grey"] {
-    background-color: var(--user-chrome-grey-color, #9CA3AF);
+.color-swatch[data-color='grey'] {
+    background-color: var(--user-chrome-grey-color, #9ca3af);
 }
 
-.color-swatch[data-color="blue"] {
-    background-color: var(--user-chrome-blue-color, #60A5FA);
+.color-swatch[data-color='blue'] {
+    background-color: var(--user-chrome-blue-color, #60a5fa);
 }
 
-.color-swatch[data-color="red"] {
-    background-color: var(--user-chrome-red-color, #F87171);
+.color-swatch[data-color='red'] {
+    background-color: var(--user-chrome-red-color, #f87171);
 }
 
-.color-swatch[data-color="yellow"] {
-    background-color: var(--user-chrome-yellow-color, #FBBF24);
+.color-swatch[data-color='yellow'] {
+    background-color: var(--user-chrome-yellow-color, #fbbf24);
 }
 
-.color-swatch[data-color="green"] {
-    background-color: var(--user-chrome-green-color, #34D399);
+.color-swatch[data-color='green'] {
+    background-color: var(--user-chrome-green-color, #34d399);
 }
 
-.color-swatch[data-color="pink"] {
-    background-color: var(--user-chrome-pink-color, #F472B6);
+.color-swatch[data-color='pink'] {
+    background-color: var(--user-chrome-pink-color, #f472b6);
 }
 
-.color-swatch[data-color="purple"] {
-    background-color: var(--user-chrome-purple-color, #A78BFA);
+.color-swatch[data-color='purple'] {
+    background-color: var(--user-chrome-purple-color, #a78bfa);
 }
 
-.color-swatch[data-color="cyan"] {
-    background-color: var(--user-chrome-cyan-color, #22D3EE);
+.color-swatch[data-color='cyan'] {
+    background-color: var(--user-chrome-cyan-color, #22d3ee);
 }
 
 .folder {
@@ -729,7 +747,9 @@ h3 {
 
 .pinned-tabs {
     /* Visible at once when expanding, so New Folder can focus its name field straight away. */
-    transition: all 0.2s ease, visibility 0s;
+    transition:
+        all 0.2s ease,
+        visibility 0s;
     /* overflow: hidden;
     max-height: 500px;  */
     opacity: 1;
@@ -744,7 +764,9 @@ h3 {
     /* Collapsed favorites stay out of the way: no clicks, hover or keyboard focus. */
     overflow: hidden;
     visibility: hidden;
-    transition: all 0.2s ease, visibility 0s 0.2s;
+    transition:
+        all 0.2s ease,
+        visibility 0s 0.2s;
 }
 
 .temp-header {
@@ -838,7 +860,10 @@ h3 {
     font-weight: 400;
     text-align: left;
     width: 100%;
-    transition: background-color 0.12s ease, color 0.12s ease, transform 0.08s ease;
+    transition:
+        background-color 0.12s ease,
+        color 0.12s ease,
+        transform 0.08s ease;
 }
 
 .new-tab-btn:hover {
@@ -916,8 +941,14 @@ h3 {
 }
 
 @keyframes sidecove-toast-in {
-    from { opacity: 0; transform: translate(-50%, 6px); }
-    to { opacity: 1; transform: translate(-50%, 0); }
+    from {
+        opacity: 0;
+        transform: translate(-50%, 6px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
 }
 
 .undo-toast-button {
@@ -952,7 +983,9 @@ h3 {
     /* IE and Edge */
     opacity: 1;
     visibility: visible;
-    transition: opacity 0.2s ease, visibility 0.2s ease;
+    transition:
+        opacity 0.2s ease,
+        visibility 0.2s ease;
 }
 
 .space-switcher.more-after {
@@ -964,7 +997,13 @@ h3 {
 }
 
 .space-switcher.more-before.more-after {
-    mask-image: linear-gradient(to right, transparent 4px, #000 32px, #000 calc(100% - 32px), transparent calc(100% - 4px));
+    mask-image: linear-gradient(
+        to right,
+        transparent 4px,
+        #000 32px,
+        #000 calc(100% - 32px),
+        transparent calc(100% - 4px)
+    );
 }
 
 .space-switcher::-webkit-scrollbar {
@@ -1030,7 +1069,9 @@ h3 {
     border-radius: 8px;
     background-color: transparent;
     opacity: 0.5;
-    transition: opacity 0.15s ease, background-color 0.15s ease;
+    transition:
+        opacity 0.15s ease,
+        background-color 0.15s ease;
 }
 
 .space-switcher.icons-only button:hover {
@@ -1087,7 +1128,10 @@ h3 {
     font-size: 17px;
     line-height: 1;
     cursor: pointer;
-    transition: background-color 0.15s ease, opacity 0.15s ease, width 0.15s ease;
+    transition:
+        background-color 0.15s ease,
+        opacity 0.15s ease,
+        width 0.15s ease;
 }
 
 .space-icon-button:hover {
@@ -1153,7 +1197,9 @@ h3 {
     border-radius: 12px;
     background: #fff;
     color: #30363d;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.06);
+    box-shadow:
+        0 8px 28px rgba(0, 0, 0, 0.18),
+        0 0 0 1px rgba(0, 0, 0, 0.06);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -1174,7 +1220,9 @@ h3 {
     color: inherit;
     font-size: 18px;
     cursor: pointer;
-    transition: background-color 0.12s ease, transform 0.12s ease;
+    transition:
+        background-color 0.12s ease,
+        transform 0.12s ease;
 }
 
 .space-icon-choice:hover,
@@ -1220,13 +1268,21 @@ h3 {
 }
 
 @keyframes sidecove-pop-in {
-    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
-    to { opacity: 1; transform: none; }
+    from {
+        opacity: 0;
+        transform: translateY(-4px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
 .space-switcher button.active {
     background-color: #fff;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.06),
+        0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .tab {
@@ -1237,7 +1293,11 @@ h3 {
     margin-bottom: 2px;
     border-radius: 10px;
     cursor: pointer;
-    transition: background-color 0.12s ease, box-shadow 0.12s ease, transform 0.08s ease, opacity 0.15s ease;
+    transition:
+        background-color 0.12s ease,
+        box-shadow 0.12s ease,
+        transform 0.08s ease,
+        opacity 0.15s ease;
     background: var(--space-bg-color, rgba(255, 255, 255, 0.1));
     position: relative;
 }
@@ -1253,7 +1313,9 @@ h3 {
 
 .tab.active {
     background: #fff;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.06),
+        0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Multi-select: Cmd/Ctrl or Shift click. */
@@ -1323,11 +1385,13 @@ h3 {
     padding: 4px;
     margin: -4px 4px -4px -4px; /* keep layout stable despite padding */
     border-radius: 6px;
-    transition: background-color 0.12s ease, transform 0.12s ease;
+    transition:
+        background-color 0.12s ease,
+        transform 0.12s ease;
 }
 
 .tab-favicon.pinned-back:hover {
-    background-color: rgba(0, 0, 0, 0.10);
+    background-color: rgba(0, 0, 0, 0.1);
 }
 
 .tab.active .tab-favicon.pinned-back:hover {
@@ -1348,7 +1412,6 @@ h3 {
 .tab-url-changed-slash.visible {
     display: inline-block;
 }
-
 
 .tab-details {
     flex-grow: 1;
@@ -1453,7 +1516,9 @@ h3 {
     border-radius: 6px;
     margin-left: 4px;
     padding: 4px;
-    transition: background-color 0.15s ease, color 0.15s ease;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
 }
 
 .tab-audio[hidden] {
@@ -1485,7 +1550,9 @@ h3 {
     border-radius: 6px;
     margin-left: 8px;
     opacity: 0;
-    transition: opacity 0.2s ease, background-color 0.3s ease;
+    transition:
+        opacity 0.2s ease,
+        background-color 0.3s ease;
 }
 
 .tab:hover .tab-close,
@@ -1576,7 +1643,9 @@ h3 {
     height: 5rem;
     visibility: visible;
     /* Focusable as soon as it opens; it still fades out when closed. */
-    transition: all 0.2s ease, visibility 0s;
+    transition:
+        all 0.2s ease,
+        visibility 0s;
 }
 
 #newSpaceName {
@@ -1697,7 +1766,9 @@ h3 {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.options-header { margin-bottom: 2rem; }
+.options-header {
+    margin-bottom: 2rem;
+}
 .options-title {
     margin-bottom: 0.5rem;
     color: var(--options-primary-color);
@@ -1706,7 +1777,9 @@ h3 {
     line-height: 1.25;
 }
 
-.options-section { margin-bottom: 2rem; }
+.options-section {
+    margin-bottom: 2rem;
+}
 .options-section-title {
     font-size: 1.125rem;
     font-weight: 600;
@@ -1719,8 +1792,12 @@ h3 {
     align-items: start;
     padding: 1rem 0;
 }
-.options-setting-item + .options-setting-item { border-top: 1px solid var(--options-border-color); }
-.options-setting-copy { min-width: 0; }
+.options-setting-item + .options-setting-item {
+    border-top: 1px solid var(--options-border-color);
+}
+.options-setting-copy {
+    min-width: 0;
+}
 .options-label {
     display: block;
     font-size: 0.9375rem;
@@ -1737,7 +1814,9 @@ h3 {
     max-width: 70ch;
     overflow-wrap: anywhere;
 }
-.options-setting-field { grid-template-columns: minmax(0, 1fr) 11rem; }
+.options-setting-field {
+    grid-template-columns: minmax(0, 1fr) 11rem;
+}
 .options-input {
     width: 100%;
     min-width: 0;
@@ -1750,14 +1829,24 @@ h3 {
     color: var(--options-text-color);
     caret-color: var(--options-primary-color);
 }
-.options-input:hover { border-color: var(--options-text-color); }
-.options-input:disabled { opacity: 0.5; cursor: not-allowed; }
-.options-dependent-setting { padding-bottom: 0; }
+.options-input:hover {
+    border-color: var(--options-text-color);
+}
+.options-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.options-dependent-setting {
+    padding-bottom: 0;
+}
 .options-page :is(button, input, select):focus-visible {
     outline: 2px solid var(--options-primary-color);
     outline-offset: 4px;
 }
-.options-page ::selection { background: #f4cccc; color: #333; }
+.options-page ::selection {
+    background: #f4cccc;
+    color: #333;
+}
 
 /* Toast notification styles */
 .save-toast {
@@ -1809,7 +1898,6 @@ h3 {
     white-space: nowrap;
 }
 
-
 /* Archive Section Styles */
 .archive-section {
     width: 100%;
@@ -1855,7 +1943,9 @@ h3 {
     z-index: 0;
     /* Ensure it's above other elements */
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition:
+        opacity 0.3s ease,
+        visibility 0.3s ease;
     /* padding: 8px; */
     /* font-size: 13px; */
 }
@@ -1863,7 +1953,9 @@ h3 {
 .archived-tabs-popup.visible {
     opacity: 1;
     visibility: visible;
-    transition: opacity 0.3s ease, visibility 0s;
+    transition:
+        opacity 0.3s ease,
+        visibility 0s;
     z-index: 2;
     height: 100%;
     margin-top: 12px;
@@ -1928,8 +2020,13 @@ h3 {
 }
 
 /* Settings rows keep each switch beside its label, including at narrow widths. */
-.options-setting-toggle { grid-template-columns: minmax(0, 1fr) 51px; }
-.advanced-options-section { border-top: 1px solid var(--options-border-color); padding-top: 1rem; }
+.options-setting-toggle {
+    grid-template-columns: minmax(0, 1fr) 51px;
+}
+.advanced-options-section {
+    border-top: 1px solid var(--options-border-color);
+    padding-top: 1rem;
+}
 .advanced-options-toggle {
     width: 100%;
     min-height: 44px;
@@ -1947,7 +2044,9 @@ h3 {
     color: var(--options-text-color);
     text-align: left;
 }
-.advanced-options-toggle:hover { color: var(--options-primary-color); }
+.advanced-options-toggle:hover {
+    color: var(--options-primary-color);
+}
 .advanced-options-chevron {
     width: 8px;
     height: 8px;
@@ -1958,7 +2057,9 @@ h3 {
     transform: rotate(45deg);
     transition: transform 0.2s ease;
 }
-.advanced-options-toggle.expanded .advanced-options-chevron { transform: rotate(-135deg); }
+.advanced-options-toggle.expanded .advanced-options-chevron {
+    transform: rotate(-135deg);
+}
 .color-overrides-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1973,8 +2074,15 @@ h3 {
     padding: 0.75rem 0;
     border-bottom: 1px solid var(--options-border-color);
 }
-.color-override-label { font-weight: 500; cursor: pointer; }
-.color-picker-wrapper { display: flex; align-items: center; gap: 0.5rem; }
+.color-override-label {
+    font-weight: 500;
+    cursor: pointer;
+}
+.color-picker-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
 .color-picker {
     width: 52px;
     height: 44px;
@@ -1984,8 +2092,13 @@ h3 {
     padding: 4px;
     background: white;
 }
-.color-picker::-webkit-color-swatch-wrapper { padding: 0; }
-.color-picker::-webkit-color-swatch { border: none; border-radius: 3px; }
+.color-picker::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+.color-picker::-webkit-color-swatch {
+    border: none;
+    border-radius: 3px;
+}
 .color-reset-btn {
     min-height: 44px;
     padding: 0.5rem 0.75rem;
@@ -1997,29 +2110,56 @@ h3 {
     font-size: 0.8125rem;
     color: var(--options-text-color);
 }
-.color-reset-btn:hover { background: #e8ebef; border-color: #858b94; }
-.options-page .toggle-switch-container { height: 44px; }
-.options-page .toggle-label { top: 6px; bottom: 7px; background: #767c85; }
+.color-reset-btn:hover {
+    background: #e8ebef;
+    border-color: #858b94;
+}
+.options-page .toggle-switch-container {
+    height: 44px;
+}
+.options-page .toggle-label {
+    top: 6px;
+    bottom: 7px;
+    background: #767c85;
+}
 .options-page .ios-toggle:focus-visible + .toggle-label {
     outline: 2px solid var(--options-primary-color);
     outline-offset: 4px;
     box-shadow: none;
 }
-.options-page .ios-toggle:checked + .toggle-label { background: #27833e; }
+.options-page .ios-toggle:checked + .toggle-label {
+    background: #27833e;
+}
 .options-page .toggle-label,
-.options-page .toggle-label::before { transition-duration: 0.2s; }
-.options-page .save-toast { max-width: calc(100% - 2rem); pointer-events: none; }
+.options-page .toggle-label::before {
+    transition-duration: 0.2s;
+}
+.options-page .save-toast {
+    max-width: calc(100% - 2rem);
+    pointer-events: none;
+}
 @media (max-width: 600px) {
-    .options-page { padding: 1rem; }
-    .options-container { padding: 1.5rem; }
-    .options-setting-field { grid-template-columns: minmax(0, 1fr); gap: 0.5rem; }
-    .color-overrides-grid { grid-template-columns: minmax(0, 1fr); }
+    .options-page {
+        padding: 1rem;
+    }
+    .options-container {
+        padding: 1.5rem;
+    }
+    .options-setting-field {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.5rem;
+    }
+    .color-overrides-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 @media (prefers-reduced-motion: reduce) {
     .options-page .toggle-label,
     .options-page .toggle-label::before,
     .options-page .advanced-options-chevron,
-    .options-page .save-toast { transition: none; }
+    .options-page .save-toast {
+        transition: none;
+    }
 }
 
 .toggle-switch-container {
@@ -2049,7 +2189,7 @@ h3 {
     bottom: 0;
     background-color: #ccc;
     /* Default track color (off) */
-    transition: .4s;
+    transition: 0.4s;
     border-radius: 34px;
     /* Make it rounded */
 }
@@ -2057,7 +2197,7 @@ h3 {
 /* Style the knob (the circle) */
 .toggle-label:before {
     position: absolute;
-    content: "";
+    content: '';
     height: 27px;
     /* Knob height */
     width: 27px;
@@ -2067,7 +2207,7 @@ h3 {
     bottom: 2px;
     /* Position from bottom */
     background-color: white;
-    transition: .4s;
+    transition: 0.4s;
     border-radius: 50%;
     /* Make it a circle */
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -2075,20 +2215,20 @@ h3 {
 }
 
 /* Change track color when checked */
-.ios-toggle:checked+.toggle-label {
-    background-color: #4CD964;
+.ios-toggle:checked + .toggle-label {
+    background-color: #4cd964;
     /* iOS green */
 }
 
 /* Move the knob when checked */
-.ios-toggle:checked+.toggle-label:before {
+.ios-toggle:checked + .toggle-label:before {
     transform: translateX(20px);
     /* Move knob to the right */
 }
 
 /* Optional: Add focus style for accessibility */
-.ios-toggle:focus+.toggle-label {
-    box-shadow: 0 0 1px #4CD964;
+.ios-toggle:focus + .toggle-label {
+    box-shadow: 0 0 1px #4cd964;
 }
 
 .placeholder-container {
@@ -2101,7 +2241,10 @@ h3 {
 
 #spaceSwitcher button {
     /* Add transition for smooth movement */
-    transition: all 0.2s ease-in-out, margin-left 0.2s ease-in-out, margin-right 0.2s ease-in-out;
+    transition:
+        all 0.2s ease-in-out,
+        margin-left 0.2s ease-in-out,
+        margin-right 0.2s ease-in-out;
     /* Ensure buttons don't wrap unexpectedly if you add margins */
     white-space: nowrap;
 }
@@ -2121,7 +2264,9 @@ h3 {
 /* A space chip that will receive the dragged tab, favorite or folder. */
 #spaceSwitcher button.space-drop-target {
     background-color: rgba(255, 255, 255, 0.85);
-    box-shadow: 0 0 0 2px var(--space-bg-color-dark, rgba(0, 0, 0, 0.2)), 0 2px 8px rgba(0, 0, 0, 0.12);
+    box-shadow:
+        0 0 0 2px var(--space-bg-color-dark, rgba(0, 0, 0, 0.2)),
+        0 2px 8px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px) scale(1.04);
 }
 
@@ -2130,9 +2275,15 @@ h3 {
 }
 
 @keyframes space-drop-accepted {
-    0% { transform: scale(1); }
-    35% { transform: scale(1.12); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+    35% {
+        transform: scale(1.12);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 /* Optional: Style for the button being dragged */
@@ -2247,7 +2398,7 @@ h3 {
     transition: background 0.2s;
 }
 
-.archiving-toggle input:checked+.archiving-toggle-slider {
+.archiving-toggle input:checked + .archiving-toggle-slider {
     background: #4caf50;
 }
 
@@ -2263,7 +2414,7 @@ h3 {
     transition: transform 0.2s;
 }
 
-.archiving-toggle input:checked+.archiving-toggle-slider:before {
+.archiving-toggle input:checked + .archiving-toggle-slider:before {
     transform: translateX(16px);
 }
 
@@ -2361,7 +2512,7 @@ h3 {
 @media (prefers-color-scheme: dark) {
     :root {
         /* In dark mode, use darker variants of user colors or fallback to dark defaults */
-        --chrome-grey-color: var(--user-chrome-grey-color, #546E7A);
+        --chrome-grey-color: var(--user-chrome-grey-color, #546e7a);
         --chrome-blue-color: var(--user-chrome-blue-color, #235d8b);
         --chrome-red-color: var(--user-chrome-red-color, #963d3d);
         --chrome-yellow-color: var(--user-chrome-yellow-color, #a38e54);
@@ -2383,19 +2534,19 @@ h3 {
 
     /* Dark mode text colors */
     body {
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     h3 {
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .space-name {
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .space-toggle-chevron {
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .space-toggle-chevron:hover {
@@ -2403,16 +2554,18 @@ h3 {
     }
 
     .space-options {
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .space-options-dropdown {
         background-color: #2a2a2a;
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+        box-shadow:
+            0 8px 28px rgba(0, 0, 0, 0.5),
+            0 0 0 1px rgba(255, 255, 255, 0.08);
     }
 
     .space-options-dropdown button {
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .space-options-dropdown button:hover {
@@ -2428,7 +2581,7 @@ h3 {
     }
 
     .folder-title {
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .tab:hover,
@@ -2438,7 +2591,7 @@ h3 {
     }
 
     .tab.active {
-        background: #ECEFF1;
+        background: #eceff1;
     }
 
     .pinned-favicon:hover {
@@ -2446,11 +2599,11 @@ h3 {
     }
 
     .space-switcher button.active {
-        background-color: #ECEFF1;
+        background-color: #eceff1;
     }
 
     .folder-name {
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .folder-toggle {
@@ -2468,7 +2621,7 @@ h3 {
     }
 
     .clean-tabs-btn {
-        color: #E0E0E0;
+        color: #e0e0e0;
     }
 
     .clean-tabs-btn:hover {
@@ -2490,15 +2643,15 @@ h3 {
     /* Tab titles in dark mode are already at the edge of readable, so New Tab keeps their
        colour and stays quieter through its regular weight alone. */
     .new-tab-btn {
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .new-tab-btn:hover {
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .space-switcher button {
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .space-switcher button.active {
@@ -2507,7 +2660,7 @@ h3 {
 
     .space-switcher.icons-only button,
     .space-switcher.icons-only button.active {
-        color: color-mix(in srgb, var(--space-bg-color, #888) 35%, #ECEFF1);
+        color: color-mix(in srgb, var(--space-bg-color, #888) 35%, #eceff1);
     }
 
     .space-switcher.icons-only button:hover {
@@ -2517,7 +2670,7 @@ h3 {
     .tab-title-display,
     .tab-title-input {
         /* color: #fafafa; */
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .tab.active .tab-title-display,
@@ -2535,8 +2688,10 @@ h3 {
 
     .space-icon-picker {
         background: #2a2a2a;
-        color: #ECEFF1;
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+        color: #eceff1;
+        box-shadow:
+            0 8px 28px rgba(0, 0, 0, 0.5),
+            0 0 0 1px rgba(255, 255, 255, 0.08);
     }
 
     .space-icon-choice:hover,
@@ -2552,7 +2707,7 @@ h3 {
     .space-icon-custom {
         background: rgba(255, 255, 255, 0.06);
         border-color: rgba(255, 255, 255, 0.15);
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .space-icon-remove {
@@ -2574,7 +2729,7 @@ h3 {
     }
 
     #tabSearchInput {
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     #tabSearchInput::placeholder {
@@ -2601,7 +2756,7 @@ h3 {
 
     #newSpaceName {
         background-color: rgba(255, 255, 255, 0.1);
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     #newSpaceName:focus {
@@ -2614,7 +2769,7 @@ h3 {
 
     #createSpaceBtn {
         background-color: rgba(255, 255, 255, 0.2);
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     #createSpaceBtn:hover:not(:disabled) {
@@ -2630,7 +2785,7 @@ h3 {
     }
 
     .archived-tabs-list .archived-tab-item {
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .archived-tabs-list .archived-tab-item:hover {
@@ -2642,12 +2797,12 @@ h3 {
     }
 
     .archiving-toggle-label {
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .archiving-time-input {
         background: rgba(255, 255, 255, 0.1);
-        color: #ECEFF1;
+        color: #eceff1;
         border-color: rgba(255, 255, 255, 0.2);
     }
 
@@ -2668,7 +2823,7 @@ h3 {
     }
 
     .placeholder-close-btn:hover {
-        color: #ECEFF1;
+        color: #eceff1;
         background-color: rgba(255, 255, 255, 0.1);
     }
 
@@ -2676,12 +2831,14 @@ h3 {
     .context-menu {
         background-color: #2a2a2a;
         border: none;
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+        box-shadow:
+            0 8px 28px rgba(0, 0, 0, 0.5),
+            0 0 0 1px rgba(255, 255, 255, 0.08);
     }
 
     .context-menu-item {
         background-color: transparent;
-        color: #ECEFF1;
+        color: #eceff1;
     }
 
     .context-menu-item:hover {
@@ -2740,8 +2897,14 @@ h3 {
     border-radius: 8px;
     font-size: 13px;
 }
-.tab-group-import p { margin: 0 0 8px; }
-.tab-group-import button { margin-right: 8px; padding: 6px 10px; cursor: pointer; }
+.tab-group-import p {
+    margin: 0 0 8px;
+}
+.tab-group-import button {
+    margin-right: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+}
 
 /* Respect a reduced-motion preference for every Sidecove animation. */
 @media (prefers-reduced-motion: reduce) {

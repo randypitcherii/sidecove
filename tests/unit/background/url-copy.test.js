@@ -35,8 +35,14 @@ test('uses an offscreen document when Chrome provides the clipboard context', as
     assert.equal(calls[1][0], 'create');
     assert.equal(calls[2][1].target, 'offscreen');
     assert.equal(calls[2][1].text, 'https://example.org');
-    assert.deepEqual(calls.find(call => call[0] === 'close'), ['close']);
-    assert.ok(calls.some(call => call[1]?.action === 'urlCopySuccess'), 'the sidebar is told to show its toast');
+    assert.deepEqual(
+        calls.find(call => call[0] === 'close'),
+        ['close']
+    );
+    assert.ok(
+        calls.some(call => call[1]?.action === 'urlCopySuccess'),
+        'the sidebar is told to show its toast'
+    );
 });
 
 test('copies the current URL without the scripting API', async () => {
@@ -51,7 +57,15 @@ test('copies the current URL without the scripting API', async () => {
 test('the manifest no longer requests the scripting permission', () => {
     const manifest = JSON.parse(readFileSync(new URL('../../../manifest.json', import.meta.url), 'utf8'));
     assert.deepEqual(manifest.permissions, [
-        'tabs', 'tabGroups', 'sidePanel', 'storage', 'bookmarks', 'alarms', 'favicon', 'clipboardWrite', 'offscreen'
+        'tabs',
+        'tabGroups',
+        'sidePanel',
+        'storage',
+        'bookmarks',
+        'alarms',
+        'favicon',
+        'clipboardWrite',
+        'offscreen'
     ]);
     assert.equal(manifest.host_permissions, undefined);
     assert.equal(manifest.content_scripts, undefined);
@@ -62,8 +76,17 @@ test('falls back to the sidebar, never page injection, when the offscreen copy f
     const sidebarMessages = [];
     const chromeApi = {
         tabs: { query: async () => [{ id: 42, url: 'https://example.com/article' }] },
-        scripting: { executeScript: async details => { injected.push(details); return [{ result: { copied: true } }]; } },
-        offscreen: { createDocument: async () => { throw new Error('offscreen unavailable'); } },
+        scripting: {
+            executeScript: async details => {
+                injected.push(details);
+                return [{ result: { copied: true } }];
+            }
+        },
+        offscreen: {
+            createDocument: async () => {
+                throw new Error('offscreen unavailable');
+            }
+        },
         runtime: {
             lastError: null,
             getURL: path => path,

@@ -35,7 +35,9 @@ function notify(reason) {
         try {
             const sent = chrome.runtime.sendMessage({ action: 'sidecoveBookmarksChanged', reason });
             sent?.catch?.(() => {});
-        } catch { /* No sidebar is normally open. */ }
+        } catch {
+            /* No sidebar is normally open. */
+        }
     }, COALESCE_MS);
 }
 
@@ -55,7 +57,10 @@ export function registerBookmarkListeners() {
     });
     chrome.bookmarks.onMoved.addListener((id, info) => handle([id, info?.parentId, info?.oldParentId], 'moved'));
     chrome.bookmarks.onChanged.addListener(id => handle([id], 'changed'));
-    chrome.bookmarks.onChildrenReordered?.addListener((id) => handle([id], 'reordered'));
+    chrome.bookmarks.onChildrenReordered?.addListener(id => handle([id], 'reordered'));
     chrome.bookmarks.onImportBegan?.addListener(() => notify('import-started'));
-    chrome.bookmarks.onImportEnded?.addListener(() => { rootId = null; notify('import-finished'); });
+    chrome.bookmarks.onImportEnded?.addListener(() => {
+        rootId = null;
+        notify('import-finished');
+    });
 }

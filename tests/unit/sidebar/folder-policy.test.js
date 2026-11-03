@@ -18,7 +18,11 @@ beforeEach(() => {
         sibling: { id: 'sibling', parentId: 'space' }
     };
     const trees = {
-        parent: { id: 'parent', parentId: 'space', children: [{ id: 'child', parentId: 'parent', children: [{ id: 'leaf', url: 'https://leaf.test/' }] }] },
+        parent: {
+            id: 'parent',
+            parentId: 'space',
+            children: [{ id: 'child', parentId: 'parent', children: [{ id: 'leaf', url: 'https://leaf.test/' }] }]
+        },
         child: { id: 'child', parentId: 'parent', children: [{ id: 'leaf', url: 'https://leaf.test/' }] },
         deep: { id: 'deep', parentId: 'child', children: [] },
         sibling: { id: 'sibling', parentId: 'space', children: [{ id: 'tab', url: 'https://tab.test/' }] },
@@ -29,7 +33,10 @@ beforeEach(() => {
         bookmarks: {
             get: async id => [nodes[id]],
             getSubTree: async id => [trees[id]],
-            create: async data => { created.push(data); return { id: 'new', ...data }; }
+            create: async data => {
+                created.push(data);
+                return { id: 'new', ...data };
+            }
         }
     };
 });
@@ -43,7 +50,10 @@ test('independent mode creates folders at levels 1 to 4', async () => {
         assert.equal(await canCreateFolder('space', id), true);
         await createFolder('space', id, 'New');
     }
-    assert.deepEqual(created.map(c => c.parentId), ['space', 'parent', 'child', 'grandchild']);
+    assert.deepEqual(
+        created.map(c => c.parentId),
+        ['space', 'parent', 'child', 'grandchild']
+    );
 });
 test('fifth-level and foreign-parent creation do not mutate bookmarks', async () => {
     for (const id of ['level4', 'foreign', 'bookmark', 'inBookmark', 'missing']) {
@@ -66,7 +76,13 @@ test('enabling sync after opening the menu is rechecked at creation', async () =
     assert.deepEqual(created, []);
 });
 test('isDescendant matches the folder itself and every node inside it', () => {
-    const tree = { id: 'a', children: [{ id: 'b', children: [{ id: 'c' }] }, { id: 'd', url: 'https://d.test/' }] };
+    const tree = {
+        id: 'a',
+        children: [
+            { id: 'b', children: [{ id: 'c' }] },
+            { id: 'd', url: 'https://d.test/' }
+        ]
+    };
     for (const id of ['a', 'b', 'c', 'd']) assert.equal(isDescendant(tree, id), true);
     assert.equal(isDescendant(tree, 'space'), false);
     assert.equal(isDescendant({ id: 7 }, '7'), true);
